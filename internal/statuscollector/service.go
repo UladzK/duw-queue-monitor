@@ -1,4 +1,4 @@
-package main
+package statuscollector
 
 import (
 	"bytes"
@@ -74,7 +74,7 @@ func sendPushoverNotification(message string) error {
 	return nil
 }
 
-func main() {
+func Run() {
 	sendPushesAlways := os.Getenv("SEND_PUSHES_ALWAYS")
 	firstPushSentAlready := false
 	lastTicketProcessedInQueue := ""
