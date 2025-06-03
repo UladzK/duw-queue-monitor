@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 
 	"io"
 	"mime/multipart"
@@ -75,104 +77,119 @@ func sendPushoverNotification(message string) error {
 }
 
 func Run() {
-	sendPushesAlways := os.Getenv("SEND_PUSHES_ALWAYS")
+	sendPushesAlways, _ := strconv.ParseBool(os.Getenv("SEND_PUSHES_ALWAYS"))                 // TODO: follow up on err handling, TODO: move to Config
+	statusCheckIntervalSeconds, _ := strconv.Atoi(os.Getenv("STATUS_CHECK_INTERVAL_SECONDS")) // TODO: follow up on err handling, TODO: move to Config
+
 	firstPushSentAlready := false
 	lastTicketProcessedInQueue := ""
 	for {
-		req, err := http.NewRequest("GET", "https://rezerwacje.duw.pl/status_kolejek/query.php?status=", nil)
+		pushSent, lastTicket, err := collectStatusAndPushNotifications(sendPushesAlways, firstPushSentAlready, lastTicketProcessedInQueue)
 		if err != nil {
-			fmt.Printf("Error creating request: %v\n", err)
-			time.Sleep(10 * time.Second)
-			continue
+			fmt.Printf("err during collecting status and pushing notifications: %v\n", err)
 		}
 
-		// Add headers to make the request more browser-like
-		// needed because otherwise urząd's API does not return data :( if they think that it should protect from bots, then they are not very smart ofc
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-		req.Header.Set("Accept", "application/json")
+		firstPushSentAlready = pushSent
+		lastTicketProcessedInQueue = lastTicket
+		fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), statusCheckIntervalSeconds)
+		time.Sleep(time.Duration(statusCheckIntervalSeconds) * time.Second)
+	}
+}
 
-		// Create custom transport to skip certificate verification
-		// needed because otherwise the TLS connection is not established when calling from inside the container. silly workaround which just works
-		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-		client := &http.Client{Transport: tr}
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Printf("Error making HTTP request: %v\n", err)
-			time.Sleep(10 * time.Second)
-			continue
-		}
-		defer resp.Body.Close()
+func collectStatusAndPushNotifications(sendPushesAlways bool, firstPushSentAlready bool, lastTicketProcessedInQueue string) (firstPushSent bool, lastTicketProcessed string, err error) {
+	req, err := http.NewRequest("GET", "https://rezerwacje.duw.pl/status_kolejek/query.php?status=", nil)
+	if err != nil {
+		fmt.Printf("Error creating request: %v\n", err)
+		time.Sleep(10 * time.Second)
+		return firstPushSentAlready, lastTicketProcessedInQueue, err
+	}
 
-		if resp.StatusCode != 200 {
-			fmt.Printf("got %v status code\n", resp.StatusCode)
-			break
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Printf("Error reading response body: %v\n", err)
-			time.Sleep(10 * time.Second)
-			continue
-		}
+	// Add headers to make the request more browser-like
+	// needed because otherwise urząd's API does not return data :( if they think that it should protect from bots, then they are not very smart ofc
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+	req.Header.Set("Accept", "application/json")
 
-		var response Response
-		if err := json.Unmarshal(body, &response); err != nil {
-			fmt.Printf("Error parsing JSON: %v\n", err)
-			time.Sleep(10 * time.Second)
-			continue
-		}
+	// Create custom transport to skip certificate verification
+	// needed because otherwise the TLS connection is not established when calling from inside the container. silly workaround which just works
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error making HTTP request: %v\n", err)
+		time.Sleep(10 * time.Second)
+		return firstPushSentAlready, lastTicketProcessedInQueue, err
+	}
+	defer resp.Body.Close()
 
-		found := false
-		for _, queue := range response.Result["Wrocław"] {
-			if queue.ID == 24 {
-				found = true
+	if resp.StatusCode != 200 {
+		fmt.Printf("got %v status code\n", resp.StatusCode)
+		return firstPushSentAlready, lastTicketProcessedInQueue, err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %v\n", err)
+		time.Sleep(10 * time.Second)
+		return firstPushSentAlready, lastTicketProcessedInQueue, err
+	}
 
-				fmt.Println("Found queue with id 24")
-				fmt.Printf("Queue name: %s\n", queue.Name)
-				fmt.Printf("Active: %t\n", queue.Active)
-				fmt.Printf("Enabled: %t\n", queue.Enabled)
-				fmt.Printf("Tickets left: %d\n", queue.TicketsLeft)
-				fmt.Printf("Current ticket: %s\n", queue.TicketValue)
-				fmt.Printf("Tickets in queue: %d\n", queue.TicketCount)
+	var response Response
+	if err := json.Unmarshal(body, &response); err != nil {
+		fmt.Printf("Error parsing JSON: %v\n", err)
+		time.Sleep(10 * time.Second)
+		return firstPushSentAlready, lastTicketProcessedInQueue, err
+	}
 
-				actualTicketInQueue := queue.TicketValue
-				if (queue.Active && queue.Enabled) || sendPushesAlways == "true" {
+	found := false
+	for _, queue := range response.Result["Wrocław"] {
+		if queue.ID == 24 {
+			found = true
 
-					pushMessage := fmt.Sprintf("Kolejka %s jest dostępna. Aktualny numer biletu to %s. Liczba biletów w kolejce to %d", queue.Name, queue.TicketValue, queue.TicketCount)
+			fmt.Println("Found queue with id 24")
+			fmt.Printf("Queue name: %s\n", queue.Name)
+			fmt.Printf("Active: %t\n", queue.Active)
+			fmt.Printf("Enabled: %t\n", queue.Enabled)
+			fmt.Printf("Tickets left: %d\n", queue.TicketsLeft)
+			fmt.Printf("Current ticket: %s\n", queue.TicketValue)
+			fmt.Printf("Tickets in queue: %d\n", queue.TicketCount)
 
-					fmt.Println(pushMessage)
-					if !firstPushSentAlready {
-						fmt.Println("Sending primary notification...")
-						if err := sendPushoverNotification(pushMessage); err != nil {
-							fmt.Printf("Error sending notification: %v\n", err)
-						} else {
-							firstPushSentAlready = true
-							lastTicketProcessedInQueue = actualTicketInQueue
-						}
+			actualTicketInQueue := queue.TicketValue
+			if (queue.Active && queue.Enabled) || sendPushesAlways == true {
+
+				pushMessage := fmt.Sprintf("Kolejka %s jest dostępna. Aktualny numer biletu to %s. Liczba biletów w kolejce to %d", queue.Name, queue.TicketValue, queue.TicketCount)
+
+				fmt.Println(pushMessage)
+				if !firstPushSentAlready {
+					fmt.Println("Sending primary notification...")
+					if err := sendPushoverNotification(pushMessage); err != nil {
+						fmt.Printf("Error sending notification: %v\n", err)
+						return firstPushSentAlready, lastTicketProcessedInQueue, err
 					} else {
-						if actualTicketInQueue != lastTicketProcessedInQueue {
-							fmt.Println("Sending secondary notification...")
-							if err := sendPushoverNotification(pushMessage); err != nil {
-								fmt.Printf("Error sending notification: %v\n", err)
-							} else {
-								lastTicketProcessedInQueue = actualTicketInQueue
-							}
-						}
+						return true, actualTicketInQueue, nil
 					}
 				} else {
-					fmt.Printf("Queue is not available (active: %t, enabled: %t)\n",
-						queue.Active, queue.Enabled)
+					if actualTicketInQueue != lastTicketProcessedInQueue {
+						fmt.Println("Sending secondary notification...")
+						if err := sendPushoverNotification(pushMessage); err != nil {
+							fmt.Printf("Error sending notification: %v\n", err)
+							return firstPushSentAlready, lastTicketProcessedInQueue, err
+						} else {
+							return firstPushSentAlready, actualTicketInQueue, nil
+						}
+					}
 				}
-				break
+			} else {
+				fmt.Printf("Queue is not available (active: %t, enabled: %t)\n", queue.Active, queue.Enabled)
 			}
+			break
 		}
-
-		if !found {
-			fmt.Println("Queue with id 24 not found")
-		}
-
-		fmt.Printf("[%v] Checking again in 10 seconds...\n", time.Now())
-		time.Sleep(10 * time.Second)
 	}
+
+	if !found {
+		fmt.Println("Queue with id 24 not found")
+
+		return firstPushSentAlready, lastTicketProcessedInQueue, errors.New("Queue with id 24 not found")
+	}
+
+	return firstPushSentAlready, "", errors.New("something went wrong. didn't quit from the main loop")
 }
