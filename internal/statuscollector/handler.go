@@ -1,7 +1,6 @@
 package statuscollector
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,61 +8,79 @@ import (
 	"time"
 )
 
+type Handler struct {
+	isStateInitialized  bool
+	queueActive         bool
+	queueEnabled        bool
+	lastTicketProcessed string
+	ticketsLeft         int
+}
+
 func Run() {
-	sendPushesAlways, _ := strconv.ParseBool(os.Getenv("SEND_PUSHES_ALWAYS"))                 // TODO: follow up on err handling, TODO: move to Config
+	// sendPushesAlways, _ := strconv.ParseBool(os.Getenv("SEND_PUSHES_ALWAYS"))                 // TODO: follow up on err handling, TODO: move to Config
 	statusCheckIntervalSeconds, _ := strconv.Atoi(os.Getenv("STATUS_CHECK_INTERVAL_SECONDS")) // TODO: follow up on err handling, TODO: move to Config
 
-	firstPushSentAlready := false
-	lastTicketProcessedInQueue := ""
+	handler := Handler{
+		isStateInitialized: false,
+	}
+
 	for {
-		pushSent, lastTicket, err := checkAndProcessStatus(sendPushesAlways, firstPushSentAlready, lastTicketProcessedInQueue)
-		if err != nil {
-			fmt.Printf("err during collecting status and pushing notifications: %v\n", err)
+		if err := handler.checkAndProcessStatus(); err != nil {
+			fmt.Printf("err during collecting status and pushing notifications: %v\n", err) // TODO: use logging
 		}
 
-		firstPushSentAlready = pushSent
-		lastTicketProcessedInQueue = lastTicket
-		fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), statusCheckIntervalSeconds)
-		time.Sleep(time.Duration(statusCheckIntervalSeconds) * time.Second)
+		fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), statusCheckIntervalSeconds) // TODO: use logging
+		time.Sleep(time.Duration(statusCheckIntervalSeconds) * time.Second)                          // TODO: ticket is the better option?
 	}
 }
 
-func checkAndProcessStatus(sendPushesAlways bool, firstPushSentAlready bool, lastTicketProcessedInQueue string) (firstPushSent bool, lastTicketProcessed string, err error) {
+func (h *Handler) checkAndProcessStatus() error {
 
-	queueStatus, err := getQueueStatus()
+	newQueueStatus, err := getQueueStatus()
 	if err != nil {
-		return firstPushSentAlready, lastTicketProcessedInQueue, err
+		return err
 	}
 
-	//TODO: rewrite to work on status changes
-	actualTicketInQueue := queueStatus.TicketValue
-	if queueStatus.Enabled || sendPushesAlways {
-
-		pushMessage := fmt.Sprintf("Kolejka %s jest dostępna. Aktualny numer biletu to %s. Liczba biletów w kolejce to %d", queueStatus.Name, queueStatus.TicketValue, queueStatus.TicketCount)
-
-		fmt.Println(pushMessage)
-		if !firstPushSentAlready {
-			fmt.Println("Sending primary notification...")
-			if err := sendPushoverNotification(pushMessage); err != nil {
-				fmt.Printf("Error sending notification: %v\n", err)
-				return firstPushSentAlready, lastTicketProcessedInQueue, err
-			} else {
-				return true, actualTicketInQueue, nil
-			}
-		} else {
-			if actualTicketInQueue != lastTicketProcessedInQueue {
-				fmt.Println("Sending secondary notification...")
-				if err := sendPushoverNotification(pushMessage); err != nil {
-					fmt.Printf("Error sending notification: %v\n", err)
-					return firstPushSentAlready, lastTicketProcessedInQueue, err
-				} else {
-					return firstPushSentAlready, actualTicketInQueue, nil
-				}
-			}
+	if !h.isStateInitialized || h.statusChanged(newQueueStatus) {
+		if err := pushQueueEnabledNotification(newQueueStatus); err != nil {
+			return err
 		}
-	} else {
-		fmt.Printf("Queue is not available (active: %t, enabled: %t)\n", queueStatus.Active, queueStatus.Enabled)
+
+		h.updateState(newQueueStatus)
+
+		return nil
 	}
 
-	return firstPushSentAlready, "", errors.New("something went wrong. didn't quit from the main loop")
+	if !newQueueStatus.Enabled {
+		return nil
+	}
+
+	if h.ticketsLeft != newQueueStatus.TicketsLeft {
+		if err := pushQueueEnabledNotification(newQueueStatus); err != nil {
+			return err
+		}
+
+		h.updateState(newQueueStatus)
+	}
+
+	return nil
+}
+
+func (h *Handler) statusChanged(newQueueStatus *Queue) bool {
+	return h.queueActive != newQueueStatus.Active || h.queueEnabled != newQueueStatus.Enabled
+}
+
+func pushQueueEnabledNotification(newQueueStatus *Queue) error {
+	if err := sendGeneralQueueStatusUpdatePush(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
+		return fmt.Errorf("error sending queue enabled notifiication: %w", err)
+	}
+
+	return nil
+}
+
+func (h *Handler) updateState(newQueueStatus *Queue) {
+	h.isStateInitialized = true
+	h.lastTicketProcessed = newQueueStatus.TicketValue
+	h.queueEnabled = newQueueStatus.Enabled
+	h.queueActive = newQueueStatus.Active
 }
