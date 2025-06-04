@@ -73,6 +73,7 @@ func getQueueStatus() (queueStatus *Queue, err error) {
 		fmt.Printf("got %v status code\n", resp.StatusCode)
 		return nil, err
 	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("Error reading response body: %v\n", err)
