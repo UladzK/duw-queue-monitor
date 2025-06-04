@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type StatusCollectorService struct {
+	cfg        *StatusCollectorConfig
+	httpClient *http.Client
+}
+
 // QueueOperation represents an operation within a queue
 type QueueOperation struct {
 	ID      string `json:"id"`
@@ -40,10 +45,26 @@ type Response struct {
 	Result map[string][]Queue `json:"result"`
 }
 
-func getQueueStatus() (queueStatus *Queue, err error) {
+const (
+	odbiorKartyQueueId = 24 // ID of the queue we are interested in
+)
 
-	const odbiorKartyQueueId = 24
-	req, err := http.NewRequest("GET", "https://rezerwacje.duw.pl/status_kolejek/query.php?status=", nil)
+func NewStatusCollectorService(cfg *StatusCollectorConfig) *StatusCollectorService {
+	return &StatusCollectorService{
+		cfg: cfg,
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				// needed because otherwise the TLS connection is not established when calling from inside the container. silly workaround which just works
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		},
+	}
+}
+
+func (s *StatusCollectorService) getQueueStatus() (queueStatus *Queue, err error) {
+
+	fmt.Println(s.cfg.StatusApiUrl)
+	req, err := http.NewRequest("GET", s.cfg.StatusApiUrl, nil)
 	if err != nil {
 		fmt.Printf("Error creating request: %v\n", err)
 		time.Sleep(10 * time.Second)
@@ -55,13 +76,7 @@ func getQueueStatus() (queueStatus *Queue, err error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 	req.Header.Set("Accept", "application/json")
 
-	// Create custom transport to skip certificate verification
-	// needed because otherwise the TLS connection is not established when calling from inside the container. silly workaround which just works
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-	resp, err := client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		fmt.Printf("Error making HTTP request: %v\n", err)
 		time.Sleep(10 * time.Second)
@@ -89,15 +104,6 @@ func getQueueStatus() (queueStatus *Queue, err error) {
 	}
 	for _, queue := range response.Result["Wrocław"] {
 		if queue.ID == odbiorKartyQueueId {
-
-			fmt.Println("Found queue with id 24")
-			fmt.Printf("Queue name: %s\n", queue.Name)
-			fmt.Printf("Active: %t\n", queue.Active)
-			fmt.Printf("Enabled: %t\n", queue.Enabled)
-			fmt.Printf("Tickets left: %d\n", queue.TicketsLeft)
-			fmt.Printf("Current ticket: %s\n", queue.TicketValue)
-			fmt.Printf("Tickets in queue: %d\n", queue.TicketCount)
-
 			return &queue, nil
 		}
 	}

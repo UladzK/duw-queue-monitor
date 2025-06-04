@@ -2,13 +2,13 @@ package statuscollector
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 
 	"time"
 )
 
 type Handler struct {
+	cfg                 *Config
+	collector           *StatusCollectorService
 	isStateInitialized  bool
 	queueActive         bool
 	queueEnabled        bool
@@ -16,27 +16,28 @@ type Handler struct {
 	ticketsLeft         int
 }
 
-func Run() {
-	// sendPushesAlways, _ := strconv.ParseBool(os.Getenv("SEND_PUSHES_ALWAYS"))                 // TODO: follow up on err handling, TODO: move to Config
-	statusCheckIntervalSeconds, _ := strconv.Atoi(os.Getenv("STATUS_CHECK_INTERVAL_SECONDS")) // TODO: follow up on err handling, TODO: move to Config
-
-	handler := Handler{
+func NewHandler(cfg *Config) *Handler {
+	return &Handler{
+		cfg:                cfg,
+		collector:          NewStatusCollectorService(&cfg.StatusCollector),
 		isStateInitialized: false,
 	}
+}
 
+func (h *Handler) Run() {
 	for {
-		if err := handler.checkAndProcessStatus(); err != nil {
+		if err := h.checkAndProcessStatus(); err != nil {
 			fmt.Printf("err during collecting status and pushing notifications: %v\n", err) // TODO: use logging
 		}
 
-		fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), statusCheckIntervalSeconds) // TODO: use logging
-		time.Sleep(time.Duration(statusCheckIntervalSeconds) * time.Second)                          // TODO: ticket is the better option?
+		fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), h.cfg.StatusCheckInternalSeconds) // TODO: use logging
+		time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)                          // TODO: ticket is the better option?
 	}
 }
 
 func (h *Handler) checkAndProcessStatus() error {
 
-	newQueueStatus, err := getQueueStatus()
+	newQueueStatus, err := h.collector.getQueueStatus()
 	if err != nil {
 		return err
 	}

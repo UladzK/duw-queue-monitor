@@ -7,6 +7,11 @@ import (
 	"net/http"
 )
 
+const (
+	availableMsgTmpl   = "Queue %s is available! Actual ticket: %s. Number of tickets left: %d."
+	unavailableMsgTmpl = "Queue %s is unavailable."
+)
+
 // sendGeneralQueueStatusUpdatePush sends a notification via Pushover API
 func sendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
 
@@ -17,7 +22,7 @@ func sendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actua
 
 	_ = writer.WriteField("token", "aay6otxvgv5zwkwck6r6r6bch4qucs")
 	_ = writer.WriteField("user", "uun179bk9o34gn7tg3qk8s4jt8d4i5")
-	_ = writer.WriteField("message", getMessage(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
+	_ = writer.WriteField("message", buildMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
 
 	writer.Close()
 
@@ -38,10 +43,7 @@ func sendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actua
 	return nil
 }
 
-func getMessage(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) string {
-	const availableMsgTmpl = "Queue %s is available! Actual ticket: %s. Number of tickets left: %d."
-	const unavailableMsgTmpl = "Queue %s is unavailable."
-
+func buildMsg(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) string {
 	if !queueEnabled {
 		return fmt.Sprintf(unavailableMsgTmpl, queueName)
 	}
