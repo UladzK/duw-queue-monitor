@@ -1,4 +1,4 @@
-package statuscollector
+package notifications
 
 import (
 	"bytes"
@@ -12,28 +12,37 @@ const (
 	unavailableMsgTmpl = "Queue %s is unavailable."
 )
 
-// sendGeneralQueueStatusUpdatePush sends a notification via Pushover API
-func sendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
+type PushOverService struct {
+	cfg        *PushOverConfig
+	httpClient *http.Client
+}
 
-	url := "https://api.pushover.net/1/messages.json" //TODO: move to Config
+func NewPushOverService(cfg *PushOverConfig) *PushOverService {
+	return &PushOverService{
+		cfg:        cfg,
+		httpClient: &http.Client{},
+	}
+}
+
+// sendGeneralQueueStatusUpdatePush sends a notification via Pushover API
+func (s *PushOverService) SendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
 
 	var reqBuf bytes.Buffer
 	writer := multipart.NewWriter(&reqBuf)
 
-	_ = writer.WriteField("token", "aay6otxvgv5zwkwck6r6r6bch4qucs")
-	_ = writer.WriteField("user", "uun179bk9o34gn7tg3qk8s4jt8d4i5")
+	_ = writer.WriteField("token", s.cfg.Token)
+	_ = writer.WriteField("user", s.cfg.User)
 	_ = writer.WriteField("message", buildMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
 
 	writer.Close()
 
-	req, err := http.NewRequest("POST", url, &reqBuf)
+	req, err := http.NewRequest("POST", s.cfg.ApiUrl, &reqBuf)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return err
 	}

@@ -2,25 +2,28 @@ package statuscollector
 
 import (
 	"fmt"
+	"uladzk/duw_kolejka_checker/internal/statuscollector/notifications"
 
 	"time"
 )
 
 type Handler struct {
-	cfg                 *Config
-	collector           *StatusCollectorService
-	isStateInitialized  bool
-	queueActive         bool
-	queueEnabled        bool
-	lastTicketProcessed string
-	ticketsLeft         int
+	cfg                  *Config
+	collectorService     *StatusCollectorService
+	notificationsService *notifications.PushOverService
+	isStateInitialized   bool
+	queueActive          bool
+	queueEnabled         bool
+	lastTicketProcessed  string
+	ticketsLeft          int
 }
 
 func NewHandler(cfg *Config) *Handler {
 	return &Handler{
-		cfg:                cfg,
-		collector:          NewStatusCollectorService(&cfg.StatusCollector),
-		isStateInitialized: false,
+		cfg:                  cfg,
+		collectorService:     NewStatusCollectorService(&cfg.StatusCollector),
+		notificationsService: notifications.NewPushOverService(&cfg.NotificationPushOver),
+		isStateInitialized:   false,
 	}
 }
 
@@ -37,13 +40,13 @@ func (h *Handler) Run() {
 
 func (h *Handler) checkAndProcessStatus() error {
 
-	newQueueStatus, err := h.collector.getQueueStatus()
+	newQueueStatus, err := h.collectorService.getQueueStatus()
 	if err != nil {
 		return err
 	}
 
 	if !h.isStateInitialized || h.statusChanged(newQueueStatus) {
-		if err := pushQueueEnabledNotification(newQueueStatus); err != nil {
+		if err := h.pushQueueEnabledNotification(newQueueStatus); err != nil {
 			return err
 		}
 
@@ -57,7 +60,7 @@ func (h *Handler) checkAndProcessStatus() error {
 	}
 
 	if h.ticketsLeft != newQueueStatus.TicketsLeft {
-		if err := pushQueueEnabledNotification(newQueueStatus); err != nil {
+		if err := h.pushQueueEnabledNotification(newQueueStatus); err != nil {
 			return err
 		}
 
@@ -71,8 +74,8 @@ func (h *Handler) statusChanged(newQueueStatus *Queue) bool {
 	return h.queueActive != newQueueStatus.Active || h.queueEnabled != newQueueStatus.Enabled
 }
 
-func pushQueueEnabledNotification(newQueueStatus *Queue) error {
-	if err := sendGeneralQueueStatusUpdatePush(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
+func (h *Handler) pushQueueEnabledNotification(newQueueStatus *Queue) error {
+	if err := h.notificationsService.SendGeneralQueueStatusUpdatePush(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
 		return fmt.Errorf("error sending queue enabled notifiication: %w", err)
 	}
 
