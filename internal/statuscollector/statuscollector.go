@@ -71,6 +71,7 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 	// needed because otherwise DUW's API does not return data
 	req.Header.Set("User-Agent", "")
 
+	//TODO: add retries with exponential backoff. including non-OK status codes
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
@@ -86,6 +87,7 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	//TODO: this is a fatal error in general
 	var response Response
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)

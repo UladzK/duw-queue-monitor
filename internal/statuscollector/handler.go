@@ -47,7 +47,7 @@ func (h *Handler) Run(ctx context.Context, done chan<- bool) {
 			}
 
 			fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), h.cfg.StatusCheckInternalSeconds) // TODO: use logging
-			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)                          // TODO: ticket is the better option?
+			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)                          // TODO: will be sleeping even after SIGTERM. ticket is the better option?
 		}
 	}
 }
