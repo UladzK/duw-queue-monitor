@@ -8,10 +8,10 @@ import (
 )
 
 type Handler struct {
-	cfg                  *Config
-	collectorService     *StatusCollectorService
-	notificationsService *notifications.PushOverService
-	state                State
+	cfg       *Config
+	collector *StatusCollector
+	notifier  *notifications.PushOverNotifier
+	state     State
 }
 
 type State struct {
@@ -24,9 +24,9 @@ type State struct {
 
 func NewHandler(cfg *Config) *Handler {
 	return &Handler{
-		cfg:                  cfg,
-		collectorService:     NewStatusCollectorService(&cfg.StatusCollector),
-		notificationsService: notifications.NewPushOverService(&cfg.NotificationPushOver),
+		cfg:       cfg,
+		collector: NewStatusCollector(&cfg.StatusCollector),
+		notifier:  notifications.NewPushOverNotifier(&cfg.NotificationPushOver),
 		state: State{
 			isStateInitialized: false,
 		},
@@ -46,7 +46,7 @@ func (h *Handler) Run() {
 
 func (h *Handler) checkAndProcessStatus() error {
 
-	newState, err := h.collectorService.getQueueStatus()
+	newState, err := h.collector.GetQueueStatus()
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (h *Handler) statusChanged(newQueueStatus *Queue) bool {
 }
 
 func (h *Handler) pushQueueEnabledNotification(newQueueStatus *Queue) error {
-	if err := h.notificationsService.SendGeneralQueueStatusUpdatePush(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
+	if err := h.notifier.SendGeneralQueueStatusUpdatePush(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
 		return fmt.Errorf("error sending queue enabled notifiication: %w", err)
 	}
 

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type StatusCollectorService struct {
+type StatusCollector struct {
 	cfg        *StatusCollectorConfig
 	httpClient *http.Client
 }
@@ -49,8 +49,8 @@ const (
 	odbiorKartyQueueId = 24 // ID of the queue we are interested in
 )
 
-func NewStatusCollectorService(cfg *StatusCollectorConfig) *StatusCollectorService {
-	return &StatusCollectorService{
+func NewStatusCollector(cfg *StatusCollectorConfig) *StatusCollector {
+	return &StatusCollector{
 		cfg: cfg,
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -61,7 +61,7 @@ func NewStatusCollectorService(cfg *StatusCollectorConfig) *StatusCollectorServi
 	}
 }
 
-func (s *StatusCollectorService) getQueueStatus() (queueStatus *Queue, err error) {
+func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 
 	fmt.Println(s.cfg.StatusApiUrl)
 	req, err := http.NewRequest("GET", s.cfg.StatusApiUrl, nil)
