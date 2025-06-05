@@ -1,6 +1,7 @@
 package statuscollector
 
 import (
+	"context"
 	"fmt"
 	"uladzk/duw_kolejka_checker/internal/statuscollector/notifications"
 
@@ -33,14 +34,21 @@ func NewHandler(cfg *Config) *Handler {
 	}
 }
 
-func (h *Handler) Run() {
+func (h *Handler) Run(ctx context.Context, done chan<- bool) {
 	for {
-		if err := h.checkAndProcessStatus(); err != nil {
-			fmt.Printf("err during collecting status and pushing notifications: %v\n", err) // TODO: use logging
-		}
+		select {
+		case <-ctx.Done():
+			fmt.Println("Received shutdown signal, exiting...")
+			done <- true
+			return
+		default:
+			if err := h.checkAndProcessStatus(); err != nil {
+				fmt.Printf("err during collecting status and pushing notifications: %v\n", err) // TODO: use logging
+			}
 
-		fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), h.cfg.StatusCheckInternalSeconds) // TODO: use logging
-		time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)                          // TODO: ticket is the better option?
+			fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), h.cfg.StatusCheckInternalSeconds) // TODO: use logging
+			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)                          // TODO: ticket is the better option?
+		}
 	}
 }
 
