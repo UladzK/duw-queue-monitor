@@ -11,11 +11,15 @@ type Handler struct {
 	cfg                  *Config
 	collectorService     *StatusCollectorService
 	notificationsService *notifications.PushOverService
-	isStateInitialized   bool
-	queueActive          bool
-	queueEnabled         bool
-	lastTicketProcessed  string
-	ticketsLeft          int
+	state                State
+}
+
+type State struct {
+	isStateInitialized  bool
+	queueActive         bool
+	queueEnabled        bool
+	lastTicketProcessed string
+	ticketsLeft         int
 }
 
 func NewHandler(cfg *Config) *Handler {
@@ -23,7 +27,9 @@ func NewHandler(cfg *Config) *Handler {
 		cfg:                  cfg,
 		collectorService:     NewStatusCollectorService(&cfg.StatusCollector),
 		notificationsService: notifications.NewPushOverService(&cfg.NotificationPushOver),
-		isStateInitialized:   false,
+		state: State{
+			isStateInitialized: false,
+		},
 	}
 }
 
@@ -40,38 +46,38 @@ func (h *Handler) Run() {
 
 func (h *Handler) checkAndProcessStatus() error {
 
-	newQueueStatus, err := h.collectorService.getQueueStatus()
+	newState, err := h.collectorService.getQueueStatus()
 	if err != nil {
 		return err
 	}
 
-	if !h.isStateInitialized || h.statusChanged(newQueueStatus) {
-		if err := h.pushQueueEnabledNotification(newQueueStatus); err != nil {
+	if !h.state.isStateInitialized || h.statusChanged(newState) {
+		if err := h.pushQueueEnabledNotification(newState); err != nil {
 			return err
 		}
 
-		h.updateState(newQueueStatus)
+		h.updateState(newState)
 
 		return nil
 	}
 
-	if !newQueueStatus.Enabled {
+	if !newState.Enabled {
 		return nil
 	}
 
-	if h.ticketsLeft != newQueueStatus.TicketsLeft {
-		if err := h.pushQueueEnabledNotification(newQueueStatus); err != nil {
+	if h.state.ticketsLeft != newState.TicketsLeft {
+		if err := h.pushQueueEnabledNotification(newState); err != nil {
 			return err
 		}
 
-		h.updateState(newQueueStatus)
+		h.updateState(newState)
 	}
 
 	return nil
 }
 
 func (h *Handler) statusChanged(newQueueStatus *Queue) bool {
-	return h.queueActive != newQueueStatus.Active || h.queueEnabled != newQueueStatus.Enabled
+	return h.state.queueActive != newQueueStatus.Active || h.state.queueEnabled != newQueueStatus.Enabled
 }
 
 func (h *Handler) pushQueueEnabledNotification(newQueueStatus *Queue) error {
@@ -83,8 +89,8 @@ func (h *Handler) pushQueueEnabledNotification(newQueueStatus *Queue) error {
 }
 
 func (h *Handler) updateState(newQueueStatus *Queue) {
-	h.isStateInitialized = true
-	h.lastTicketProcessed = newQueueStatus.TicketValue
-	h.queueEnabled = newQueueStatus.Enabled
-	h.queueActive = newQueueStatus.Active
+	h.state.isStateInitialized = true
+	h.state.lastTicketProcessed = newQueueStatus.TicketValue
+	h.state.queueEnabled = newQueueStatus.Enabled
+	h.state.queueActive = newQueueStatus.Active
 }
