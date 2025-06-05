@@ -26,8 +26,6 @@ func NewPushOverNotifier(cfg *PushOverConfig) *PushOverNotifier {
 
 // sendGeneralQueueStatusUpdatePush sends a notification via Pushover API
 func (s *PushOverNotifier) SendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
-	fmt.Println(s.cfg.Token)
-	fmt.Println(s.cfg.User)
 	req := url.Values{}
 	req.Set("token", s.cfg.Token)
 	req.Set("user", s.cfg.User)

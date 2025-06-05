@@ -48,7 +48,7 @@ func (h *Handler) checkAndProcessStatus() error {
 
 	newState, err := h.collector.GetQueueStatus()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting queue status: %w", err)
 	}
 
 	if !h.state.isStateInitialized || h.statusChanged(newState) {

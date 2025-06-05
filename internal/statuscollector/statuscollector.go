@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 type StatusCollector struct {
@@ -66,41 +65,30 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 	fmt.Println(s.cfg.StatusApiUrl)
 	req, err := http.NewRequest("GET", s.cfg.StatusApiUrl, nil)
 	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		time.Sleep(10 * time.Second)
-		return nil, err
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
-	// Add headers to make the request more browser-like
-	// needed because otherwise urząd's API does not return data :( if they think that it should protect from bots, then they are not very smart ofc
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-	req.Header.Set("Accept", "application/json")
+	// needed because otherwise DUW's API does not return data
+	req.Header.Set("User-Agent", "")
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		fmt.Printf("Error making HTTP request: %v\n", err)
-		time.Sleep(10 * time.Second)
-		return nil, err
+		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		fmt.Printf("got %v status code\n", resp.StatusCode)
-		return nil, err
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get queue status, status code: %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("Error reading response body: %v\n", err)
-		time.Sleep(10 * time.Second)
-		return nil, err
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	var response Response
 	if err := json.Unmarshal(body, &response); err != nil {
-		fmt.Printf("Error parsing JSON: %v\n", err)
-		time.Sleep(10 * time.Second)
-		return nil, err
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
 	for _, queue := range response.Result["Wrocław"] {
 		if queue.ID == odbiorKartyQueueId {
