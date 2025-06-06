@@ -15,11 +15,11 @@ type PushOverNotifier struct {
 	httpClient *http.Client
 }
 
-func NewPushOverNotifier(cfg *PushOverConfig, log *logger.Logger) *PushOverNotifier {
+func NewPushOverNotifier(cfg *PushOverConfig, log *logger.Logger, httpClient *http.Client) *PushOverNotifier {
 	return &PushOverNotifier{
 		cfg:        cfg,
 		log:        log,
-		httpClient: &http.Client{},
+		httpClient: httpClient,
 	}
 }
 

@@ -25,12 +25,12 @@ type QueueState struct {
 	ticketsLeft         int
 }
 
-func NewQueueMonitor(cfg *Config, log *logger.Logger) *QueueMonitor {
+func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier notifications.Notifier) *QueueMonitor {
 	return &QueueMonitor{
 		cfg:       cfg,
 		log:       log,
-		collector: NewStatusCollector(&cfg.StatusCollector),
-		notifier:  notifications.NewPushOverNotifier(&cfg.NotificationPushOver, log),
+		collector: collector,
+		notifier:  notifier,
 		state: QueueState{
 			isStateInitialized: false,
 		},

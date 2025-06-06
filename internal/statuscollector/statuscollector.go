@@ -1,7 +1,6 @@
 package statuscollector
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -44,15 +43,10 @@ const (
 	wroclawCityName    = "Wrocław" // City name for the queue we are interested in
 )
 
-func NewStatusCollector(cfg *StatusCollectorConfig) *StatusCollector {
+func NewStatusCollector(cfg *StatusCollectorConfig, httpClient *http.Client) *StatusCollector {
 	return &StatusCollector{
-		cfg: cfg,
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				// needed because otherwise the TLS connection is not established when calling from inside the container. silly workaround which just works
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		},
+		cfg:        cfg,
+		httpClient: httpClient,
 	}
 }
 

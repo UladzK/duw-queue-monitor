@@ -7,26 +7,28 @@ import (
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
-// Runner is responsible for the main loop of the status collector which periodically checks the queue status
+// Runner is responsible for the main loop of the status collector which periodically checks the queue status using the QueueMonitor.
 type Runner struct {
 	cfg     *Config
 	log     *logger.Logger
 	monitor *QueueMonitor
 }
 
-func NewRunner(cfg *Config, log *logger.Logger) *Runner {
+func NewRunner(cfg *Config, log *logger.Logger, monitor *QueueMonitor) *Runner {
 	return &Runner{
 		cfg:     cfg,
 		log:     log,
-		monitor: NewQueueMonitor(cfg, log),
+		monitor: monitor,
 	}
 }
 
 func (h *Runner) Run(ctx context.Context, done chan<- bool) {
+
+	h.log.Info("Started monitor loop")
 	for {
 		select {
 		case <-ctx.Done():
-			h.log.Info("Received shutdown signal, exiting...")
+			h.log.Info("Received shutdown signal. Stopped monitor loop")
 			done <- true
 			return
 		default:
