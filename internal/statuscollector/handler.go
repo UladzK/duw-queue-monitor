@@ -9,11 +9,14 @@ import (
 	"time"
 )
 
+// Handler is responsible for collecting queue status and sending notifications about changes in queue availability.
+// Essentially, it is a state machine that checks the queue status periodically and notifies about changes.
+// It uses a StatusCollector to get the queue status and a Notifier to send notifications.
 type Handler struct {
 	cfg       *Config
 	log       *logger.Logger
 	collector *StatusCollector
-	notifier  *notifications.PushOverNotifier
+	notifier  notifications.Notifier
 	state     State
 }
 

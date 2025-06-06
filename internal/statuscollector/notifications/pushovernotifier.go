@@ -13,6 +13,7 @@ const (
 	unavailableMsgTmpl = "Queue %s is unavailable."
 )
 
+// PushOverNotifier provides methods to send notifications about queue status updates using the Pushover API. See API docs: https://pushover.net/api
 type PushOverNotifier struct {
 	cfg        *PushOverConfig
 	log        *logger.Logger
@@ -27,7 +28,6 @@ func NewPushOverNotifier(cfg *PushOverConfig, log *logger.Logger) *PushOverNotif
 	}
 }
 
-// sendGeneralQueueStatusUpdatePush sends a notification via Pushover API
 func (s *PushOverNotifier) SendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
 	req := url.Values{}
 	req.Set("token", s.cfg.Token)

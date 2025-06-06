@@ -1,3 +1,5 @@
+// Package logger provides a common logger interface with a set of helpers that can be used across the application.
+// It uses the standard library's slog package for structured logging.
 package logger
 
 import (
@@ -5,6 +7,7 @@ import (
 	"os"
 )
 
+// Logger is a wrapper around log library to provide a common interface for logging.
 type Logger struct {
 	logger *slog.Logger
 }
@@ -16,6 +19,7 @@ func NewLogger(cfg *Config) *Logger {
 
 	// TODO: add distributed logging with writing both to stdout and to a file. see: https://github.com/samber/slog-multi#broadcast-slogmultifanout
 	handler := slog.NewTextHandler(os.Stdout, opts)
+	// TODO: add standard attribute like "role_name", "role_instance", "version", "environment" etc.
 	return &Logger{slog.New(handler)}
 }
 
