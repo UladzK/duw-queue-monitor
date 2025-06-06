@@ -3,6 +3,7 @@ package statuscollector
 import (
 	"context"
 	"fmt"
+	"uladzk/duw_kolejka_checker/internal/logger"
 	"uladzk/duw_kolejka_checker/internal/statuscollector/notifications"
 
 	"time"
@@ -10,6 +11,7 @@ import (
 
 type Handler struct {
 	cfg       *Config
+	log       *logger.Logger
 	collector *StatusCollector
 	notifier  *notifications.PushOverNotifier
 	state     State
@@ -23,11 +25,12 @@ type State struct {
 	ticketsLeft         int
 }
 
-func NewHandler(cfg *Config) *Handler {
+func NewHandler(cfg *Config, log *logger.Logger) *Handler {
 	return &Handler{
 		cfg:       cfg,
+		log:       log,
 		collector: NewStatusCollector(&cfg.StatusCollector),
-		notifier:  notifications.NewPushOverNotifier(&cfg.NotificationPushOver),
+		notifier:  notifications.NewPushOverNotifier(&cfg.NotificationPushOver, log),
 		state: State{
 			isStateInitialized: false,
 		},
@@ -38,16 +41,16 @@ func (h *Handler) Run(ctx context.Context, done chan<- bool) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("Received shutdown signal, exiting...")
+			h.log.Info("Received shutdown signal, exiting...")
 			done <- true
 			return
 		default:
 			if err := h.checkAndProcessStatus(); err != nil {
-				fmt.Printf("err during collecting status and pushing notifications: %v\n", err) // TODO: use logging
+				h.log.Error("Error during collecting status and pushing notifications", err)
 			}
 
-			fmt.Printf("[%v] Checking again in %v seconds...\n", time.Now(), h.cfg.StatusCheckInternalSeconds) // TODO: use logging
-			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)                          // TODO: will be sleeping even after SIGTERM. ticket is the better option?
+			h.log.Debug(fmt.Sprintf("Status collection is completed. Checking again in %v seconds", h.cfg.StatusCheckInternalSeconds))
+			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second) // TODO: will be sleeping even after SIGTERM. ticket is the better option?
 		}
 	}
 }

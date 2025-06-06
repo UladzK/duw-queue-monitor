@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
 const (
@@ -14,12 +15,14 @@ const (
 
 type PushOverNotifier struct {
 	cfg        *PushOverConfig
+	log        *logger.Logger
 	httpClient *http.Client
 }
 
-func NewPushOverNotifier(cfg *PushOverConfig) *PushOverNotifier {
+func NewPushOverNotifier(cfg *PushOverConfig, log *logger.Logger) *PushOverNotifier {
 	return &PushOverNotifier{
 		cfg:        cfg,
+		log:        log,
 		httpClient: &http.Client{},
 	}
 }
@@ -45,9 +48,9 @@ func (s *PushOverNotifier) SendGeneralQueueStatusUpdatePush(queueName string, qu
 		return fmt.Errorf("failed to send notification, status code: %d, response; %s", resp.StatusCode, respTxt)
 	}
 
+	s.log.Info("General queue status update notification sent successfully.")
 	defer resp.Body.Close()
 
-	fmt.Println("Notification sent")
 	return nil
 }
 

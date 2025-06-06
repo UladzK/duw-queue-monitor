@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"uladzk/duw_kolejka_checker/internal/logger"
 	"uladzk/duw_kolejka_checker/internal/statuscollector"
 
 	"github.com/caarlos0/env/v11"
@@ -28,15 +28,21 @@ func main() {
 
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	handler := statuscollector.NewHandler(&cfg)
+	var logCfg logger.Config
+	err = env.Parse(&logCfg)
+	if err != nil {
+		panic("Failed to get logger configuration: " + err.Error())
+	}
+	logger := logger.NewLogger(&logCfg)
+	handler := statuscollector.NewHandler(&cfg, logger)
 
-	fmt.Println("Status collector started")
+	logger.Info("Status collector started")
 	go handler.Run(ctx, done)
 
 	<-sigChan
-	fmt.Println("Received shutdown signal, stopping status collector...")
+	logger.Info("Received shutdown signal, stopping status collector...")
 	cancel()
 	<-done
 
-	fmt.Println("Status collector stopped")
+	logger.Info("Status collector stopped")
 }

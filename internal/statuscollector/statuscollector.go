@@ -61,8 +61,6 @@ func NewStatusCollector(cfg *StatusCollectorConfig) *StatusCollector {
 }
 
 func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
-
-	fmt.Println(s.cfg.StatusApiUrl)
 	req, err := http.NewRequest("GET", s.cfg.StatusApiUrl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
