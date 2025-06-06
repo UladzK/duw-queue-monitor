@@ -34,10 +34,10 @@ func main() {
 		panic("Failed to get logger configuration: " + err.Error())
 	}
 	logger := logger.NewLogger(&logCfg)
-	handler := statuscollector.NewHandler(&cfg, logger)
+	runner := statuscollector.NewRunner(&cfg, logger)
 
 	logger.Info("Status collector started")
-	go handler.Run(ctx, done)
+	go runner.Run(ctx, done)
 
 	<-sigChan
 	logger.Info("Received shutdown signal, stopping status collector...")

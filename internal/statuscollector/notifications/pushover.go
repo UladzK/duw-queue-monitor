@@ -8,11 +8,6 @@ import (
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
-const (
-	availableMsgTmpl   = "Queue %s is available! Actual ticket: %s. Number of tickets left: %d."
-	unavailableMsgTmpl = "Queue %s is unavailable."
-)
-
 // PushOverNotifier provides methods to send notifications about queue status updates using the Pushover API. See API docs: https://pushover.net/api
 type PushOverNotifier struct {
 	cfg        *PushOverConfig
@@ -32,7 +27,7 @@ func (s *PushOverNotifier) SendGeneralQueueStatusUpdatePush(queueName string, qu
 	req := url.Values{}
 	req.Set("token", s.cfg.Token)
 	req.Set("user", s.cfg.User)
-	req.Set("message", buildMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
+	req.Set("message", buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
 
 	resp, err := s.httpClient.PostForm(s.cfg.ApiUrl, req)
 	if err != nil {
@@ -52,12 +47,4 @@ func (s *PushOverNotifier) SendGeneralQueueStatusUpdatePush(queueName string, qu
 	defer resp.Body.Close()
 
 	return nil
-}
-
-func buildMsg(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) string {
-	if !queueEnabled {
-		return fmt.Sprintf(unavailableMsgTmpl, queueName)
-	}
-
-	return fmt.Sprintf(availableMsgTmpl, queueName, actualTicket, numberOfTicketsLeft)
 }

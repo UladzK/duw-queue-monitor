@@ -1,26 +1,23 @@
 package statuscollector
 
 import (
-	"context"
 	"fmt"
 	"uladzk/duw_kolejka_checker/internal/logger"
 	"uladzk/duw_kolejka_checker/internal/statuscollector/notifications"
-
-	"time"
 )
 
-// Handler is responsible for collecting queue status and sending notifications about changes in queue availability.
+// QueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
 // Essentially, it is a state machine that checks the queue status periodically and notifies about changes.
 // It uses a StatusCollector to get the queue status and a Notifier to send notifications.
-type Handler struct {
+type QueueMonitor struct {
 	cfg       *Config
 	log       *logger.Logger
 	collector *StatusCollector
 	notifier  notifications.Notifier
-	state     State
+	state     QueueState
 }
 
-type State struct {
+type QueueState struct {
 	isStateInitialized  bool
 	queueActive         bool
 	queueEnabled        bool
@@ -28,37 +25,19 @@ type State struct {
 	ticketsLeft         int
 }
 
-func NewHandler(cfg *Config, log *logger.Logger) *Handler {
-	return &Handler{
+func NewQueueMonitor(cfg *Config, log *logger.Logger) *QueueMonitor {
+	return &QueueMonitor{
 		cfg:       cfg,
 		log:       log,
 		collector: NewStatusCollector(&cfg.StatusCollector),
 		notifier:  notifications.NewPushOverNotifier(&cfg.NotificationPushOver, log),
-		state: State{
+		state: QueueState{
 			isStateInitialized: false,
 		},
 	}
 }
 
-func (h *Handler) Run(ctx context.Context, done chan<- bool) {
-	for {
-		select {
-		case <-ctx.Done():
-			h.log.Info("Received shutdown signal, exiting...")
-			done <- true
-			return
-		default:
-			if err := h.checkAndProcessStatus(); err != nil {
-				h.log.Error("Error during collecting status and pushing notifications", err)
-			}
-
-			h.log.Debug(fmt.Sprintf("Status collection is completed. Checking again in %v seconds", h.cfg.StatusCheckInternalSeconds))
-			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second) // TODO: will be sleeping even after SIGTERM. ticket is the better option?
-		}
-	}
-}
-
-func (h *Handler) checkAndProcessStatus() error {
+func (h *QueueMonitor) CheckAndProcessStatus() error {
 
 	newState, err := h.collector.GetQueueStatus()
 	if err != nil {
@@ -90,11 +69,11 @@ func (h *Handler) checkAndProcessStatus() error {
 	return nil
 }
 
-func (h *Handler) statusChanged(newQueueStatus *Queue) bool {
+func (h *QueueMonitor) statusChanged(newQueueStatus *Queue) bool {
 	return h.state.queueActive != newQueueStatus.Active || h.state.queueEnabled != newQueueStatus.Enabled
 }
 
-func (h *Handler) pushQueueEnabledNotification(newQueueStatus *Queue) error {
+func (h *QueueMonitor) pushQueueEnabledNotification(newQueueStatus *Queue) error {
 	if err := h.notifier.SendGeneralQueueStatusUpdatePush(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
 		return fmt.Errorf("error sending queue enabled notifiication: %w", err)
 	}
@@ -102,7 +81,7 @@ func (h *Handler) pushQueueEnabledNotification(newQueueStatus *Queue) error {
 	return nil
 }
 
-func (h *Handler) updateState(newQueueStatus *Queue) {
+func (h *QueueMonitor) updateState(newQueueStatus *Queue) {
 	h.state.isStateInitialized = true
 	h.state.lastTicketProcessed = newQueueStatus.TicketValue
 	h.state.queueEnabled = newQueueStatus.Enabled
