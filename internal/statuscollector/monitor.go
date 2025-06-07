@@ -58,13 +58,13 @@ func (h *QueueMonitor) CheckAndProcessStatus() error {
 		return nil
 	}
 
-	if h.state.ticketsLeft != newState.TicketsLeft {
-		if err := h.pushQueueEnabledNotification(newState); err != nil {
-			return err
-		}
+	// if h.state.ticketsLeft != newState.TicketsLeft {
+	// 	if err := h.pushQueueEnabledNotification(newState); err != nil {
+	// 		return err
+	// 	}
 
-		h.updateState(newState)
-	}
+	// 	h.updateState(newState)
+	// }
 
 	return nil
 }
