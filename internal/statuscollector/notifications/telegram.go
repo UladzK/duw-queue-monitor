@@ -1,10 +1,11 @@
 package notifications
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
@@ -22,15 +23,25 @@ func NewTelegramNotifier(cfg *TelegramConfig, log *logger.Logger, httpClient *ht
 	}
 }
 
+type SendMessageChannelRequest struct {
+	ChatID string `json:"chat_id"`
+	Text   string `json:"text"`
+}
+
 func (s *TelegramNotifier) SendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
 	channelName := fmt.Sprintf("@%s", s.cfg.BroadcastChannelName)
-	botApiUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.ApiUrl, s.cfg.BotToken)
+	botApiFullUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.BaseApiUrl, s.cfg.BotToken)
 
-	req := url.Values{}
-	req.Set("chat_id", channelName)
-	req.Set("text", buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
+	reqBody := SendMessageChannelRequest{
+		ChatID: channelName,
+		Text:   buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft),
+	}
+	b, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
 
-	resp, err := s.httpClient.PostForm(botApiUrl, req) // TODO: application/json is better
+	resp, err := s.httpClient.Post(botApiFullUrl, "application/json", bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
