@@ -23,11 +23,12 @@ func NewTelegramNotifier(cfg *TelegramConfig, log *logger.Logger, httpClient *ht
 }
 
 func (s *TelegramNotifier) SendGeneralQueueStatusUpdatePush(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
-	req := url.Values{}
-	req.Set("chat_id", s.cfg.BroadcastChannelName)
-	req.Set("text", buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
-
+	channelName := fmt.Sprintf("@%s", s.cfg.BroadcastChannelName)
 	botApiUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.ApiUrl, s.cfg.BotToken)
+
+	req := url.Values{}
+	req.Set("chat_id", channelName)
+	req.Set("text", buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft))
 
 	resp, err := s.httpClient.PostForm(botApiUrl, req) // TODO: application/json is better
 	if err != nil {
