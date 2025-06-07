@@ -37,13 +37,13 @@ func (s *PushOverNotifier) SendGeneralQueueStatusUpdatePush(queueName string, qu
 	if resp.StatusCode != http.StatusOK {
 		respTxt, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed to send notification, status code: %d", resp.StatusCode)
+			return fmt.Errorf("failed to send notification to PushOverApi. got unsuccessful status code: %d", resp.StatusCode)
 		}
 
-		return fmt.Errorf("failed to send notification, status code: %d, response; %s", resp.StatusCode, respTxt)
+		return fmt.Errorf("failed to send notification to PushOverApi. got unsuccessful status code: %d, api response: \"%s\"", resp.StatusCode, respTxt)
 	}
 
-	s.log.Info("General queue status update notification sent successfully.")
+	s.log.Info("General queue status update notification sent successfully to PushOverApi.")
 	defer resp.Body.Close()
 
 	return nil

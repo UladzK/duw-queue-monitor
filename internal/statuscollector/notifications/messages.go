@@ -3,7 +3,7 @@ package notifications
 import "fmt"
 
 const (
-	msgQueueAvailable   = "Queue %s is available! Actual ticket: %s. Number of tickets left: %d."
+	msgQueueAvailable   = "Queue %s is available! Actual ticket: %s. Tickets left: %d."
 	msgQueueUnavailable = "Queue %s is unavailable."
 )
 
