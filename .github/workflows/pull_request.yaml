@@ -2,7 +2,6 @@
 # It checks out the code, sets up Go, builds the project, and runs tests.
 
 name: Pull request workflow
-run-name : Pull request validation
 
 on:
   pull_request:
@@ -11,6 +10,7 @@ on:
 jobs:
 
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
