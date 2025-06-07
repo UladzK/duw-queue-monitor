@@ -54,6 +54,7 @@ func buildLogger() (*logger.Logger, error) {
 
 func buildRunner(log *logger.Logger) (*statuscollector.Runner, error) {
 	var cfg statuscollector.Config
+	// TODO: implement Load() method in Confis
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err
 	}
@@ -66,9 +67,17 @@ func buildRunner(log *logger.Logger) (*statuscollector.Runner, error) {
 	}
 
 	collector := statuscollector.NewStatusCollector(&cfg.StatusCollector, httpClient)
-	notifier := notifications.NewPushOverNotifier(&cfg.NotificationPushOver, log, httpClient)
+	notifier := buildNotifier(&cfg, log, httpClient)
 	monitor := statuscollector.NewQueueMonitor(&cfg, log, collector, notifier)
 
 	runner := statuscollector.NewRunner(&cfg, log, monitor)
 	return runner, nil
+}
+
+func buildNotifier(cfg *statuscollector.Config, log *logger.Logger, httpClient *http.Client) notifications.Notifier {
+	if cfg.UseTelegramNotifications {
+		return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
+	}
+
+	return notifications.NewPushOverNotifier(&cfg.NotificationPushOver, log, httpClient)
 }
