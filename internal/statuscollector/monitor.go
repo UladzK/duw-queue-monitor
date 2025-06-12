@@ -44,6 +44,11 @@ func (h *QueueMonitor) CheckAndProcessStatus() error {
 		return fmt.Errorf("error getting queue status: %w", err)
 	}
 
+	// If the monitor has just started while queue has not been enabled yet, we don't want to send any notifications.
+	if !h.state.isStateInitialized && !newState.Active {
+		return nil
+	}
+
 	if !h.state.isStateInitialized || h.statusChanged(newState) {
 		if err := h.pushQueueEnabledNotification(newState); err != nil {
 			return err
