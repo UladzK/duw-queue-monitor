@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -15,25 +16,30 @@ type MonitorState struct {
 	TicketsLeft         int    `json:"tickets_left"`          // number of tickets left in the queue
 }
 
+// MonitorStateRepository is responsible for storing and retrieving the queue monitor state in Redis.
+// State is persisted to ensure that no doublicate notifications are sent in case of monitor restart or crash.
+// TTL is used to avoid stale data.
 type MonitorStateRepository struct {
 	redisClient *redis.Client
+	stateTtl    time.Duration
 }
 
 const (
 	QueueStateKey = "queue-monitor-state:latest"
 )
 
-func NewMonitorStateRepository(redisClient *redis.Client) *MonitorStateRepository {
+func NewMonitorStateRepository(redisClient *redis.Client, stateTtlSeconds int) *MonitorStateRepository {
 	return &MonitorStateRepository{
 		redisClient: redisClient,
+		stateTtl:    time.Duration(stateTtlSeconds) * time.Second,
 	}
 }
 
-func (r *MonitorStateRepository) GetState(ctx context.Context) (*MonitorState, error) {
+func (r *MonitorStateRepository) Get(ctx context.Context) (*MonitorState, error) {
 
 	stateData, err := r.redisClient.Get(ctx, QueueStateKey).Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get queue state from Redis: \"%w\"", err)
+		return nil, fmt.Errorf("failed to get monitor state from Redis: \"%w\"", err)
 	}
 
 	if stateData == "" {
@@ -42,8 +48,21 @@ func (r *MonitorStateRepository) GetState(ctx context.Context) (*MonitorState, e
 
 	var state MonitorState
 	if err := json.Unmarshal([]byte(stateData), &state); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal queue state from Redis: \"%w\"", err)
+		return nil, fmt.Errorf("failed to unmarshal monitor state from Redis: \"%w\"", err)
 	}
 
 	return &state, nil
+}
+
+func (r *MonitorStateRepository) Save(ctx context.Context, state *MonitorState) error {
+	stateData, err := json.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("failed to marshal monitor state: \"%w\"", err)
+	}
+
+	if err := r.redisClient.Set(ctx, QueueStateKey, stateData, r.stateTtl).Err(); err != nil {
+		return fmt.Errorf("failed to save monitor state to Redis: \"%w\"", err)
+	}
+
+	return nil
 }
