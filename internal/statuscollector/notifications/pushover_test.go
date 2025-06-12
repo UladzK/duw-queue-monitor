@@ -123,6 +123,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenUnavailableMessage_SendsNotificati
 		t.Fatalf("Expected successful notification sending, but got error: \"%v\"", err)
 	}
 }
+
 func TestSendGeneralQueueStatusUpdatePush_WhenSendNotificationFailed_ReturnsError(t *testing.T) {
 	// Arrange
 	mockPushOverApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

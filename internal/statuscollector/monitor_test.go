@@ -6,12 +6,14 @@ import (
 	"net/http/httptest"
 	"testing"
 	"uladzk/duw_kolejka_checker/internal/logger"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 type mockNotifier struct {
-	shouldFail bool // used to simulate failure in sending notification
-	called     bool
-	lastStatus *Queue
+	shouldFail     bool // used to simulate failure in sending notification
+	called         bool
+	lastSentStatus *Queue
 }
 
 func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, enabled bool, actualTicket string, numberOfTicketsLeft int) error {
@@ -21,7 +23,7 @@ func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(queueName string
 		return fmt.Errorf("failed to send notification")
 	}
 
-	f.lastStatus = &Queue{
+	f.lastSentStatus = &Queue{
 		Name:        queueName,
 		Enabled:     enabled,
 		TicketValue: actualTicket,
@@ -80,90 +82,80 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_AlwaysTriggersNotificat
 		t.Error("Expected notification to be sent, but it wasn't")
 	}
 
-	if notifier.lastStatus.Name != expectedNotification.Name {
-		t.Errorf("Expected queue name %s, got %s", expectedNotification.Name, notifier.lastStatus.Name)
-	}
-
-	if notifier.lastStatus.TicketValue != expectedNotification.TicketValue {
-		t.Errorf("Expected ticket %s, got %s", expectedNotification.TicketValue, notifier.lastStatus.TicketValue)
-	}
-
-	if notifier.lastStatus.TicketsLeft != expectedNotification.TicketsLeft {
-		t.Errorf("Expected tickets left %d, got %d", expectedNotification.TicketsLeft, notifier.lastStatus.TicketsLeft)
-	}
-
-	if notifier.lastStatus.Enabled != expectedNotification.Enabled {
-		t.Errorf("Expected queue enabled %t, got %t", expectedNotification.Enabled, notifier.lastStatus.Enabled)
+	if diff := cmp.Diff(expectedNotification, notifier.lastSentStatus); diff != "" {
+		t.Errorf("Notification mismatch (-want +got):\n%s", diff)
 	}
 }
 
-// TODO: make table tests for different states
 func TestCheckAndProcessStatus_WhenQueueEnabledStateChanges_TriggersNotification(t *testing.T) {
 	// Arrange
-	expectedNotification := &Queue{
-		Name:        "Odbior karty",
-		Enabled:     true,
-		TicketValue: "K123",
-		TicketsLeft: 10,
+
+	testConditions := []struct {
+		name         string
+		queueEnabled bool
+	}{
+		{"Queue changes to enabled", true},
+		{"Queue changes to disabled", false},
 	}
 
-	mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, `{
-			"result": {
-				"Wrocław": [{
-					"id": 24,
-					"name": "Odbior karty",
-					"ticket_value": "K123",
-					"tickets_left": 10,
-					"active": true,
-					"enabled": true
-				}]
+	for _, tc := range testConditions {
+		t.Run(tc.name, func(t *testing.T) {
+
+			expectedNotification := &Queue{
+				Name:        "Odbior karty",
+				Enabled:     tc.queueEnabled,
+				TicketValue: "K123",
+				TicketsLeft: 10,
 			}
-		}`)
-	}))
-	defer mockDuwApi.Close()
 
-	cfg := &Config{
-		StatusCollector: StatusCollectorConfig{
-			StatusApiUrl: mockDuwApi.URL,
-		},
-	}
+			mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{
+					"result": {
+						"Wrocław": [{
+							"id": 24,
+							"name": "Odbior karty",
+							"ticket_value": "K123",
+							"tickets_left": 10,
+							"active": true,
+							"enabled": %v
+						}]
+					}
+				}`, tc.queueEnabled)
+			}))
+			defer mockDuwApi.Close()
 
-	collector := NewStatusCollector(&cfg.StatusCollector, &http.Client{})
-	logger := logger.NewLogger(&logger.Config{
-		Level: "error"})
+			cfg := &Config{
+				StatusCollector: StatusCollectorConfig{
+					StatusApiUrl: mockDuwApi.URL,
+				},
+			}
 
-	notifier := &mockNotifier{}
+			collector := NewStatusCollector(&cfg.StatusCollector, &http.Client{})
+			logger := logger.NewLogger(&logger.Config{
+				Level: "error"})
 
-	sut := NewQueueMonitor(cfg, logger, collector, notifier)
-	sut.state.isStateInitialized = true
-	sut.state.queueActive = false
+			notifier := &mockNotifier{}
 
-	// Act
-	err := sut.CheckAndProcessStatus()
+			sut := NewQueueMonitor(cfg, logger, collector, notifier)
+			sut.state.isStateInitialized = true
+			sut.state.queueActive = false
 
-	// Assert
-	if err != nil {
-		t.Fatalf("Expected successful execution, but execution returned error: %v", err)
-	}
-	if !notifier.called {
-		t.Error("Expected notification to be sent, but it wasn't")
-	}
+			// Act
+			err := sut.CheckAndProcessStatus()
 
-	if notifier.lastStatus.Name != expectedNotification.Name {
-		t.Errorf("Expected queue name %s, got %s", expectedNotification.Name, notifier.lastStatus.Name)
-	}
+			// Assert
+			if err != nil {
+				t.Fatalf("Expected successful execution, but execution returned error: %v", err)
+			}
 
-	if notifier.lastStatus.TicketValue != expectedNotification.TicketValue {
-		t.Errorf("Expected ticket %s, got %s", expectedNotification.TicketValue, notifier.lastStatus.TicketValue)
-	}
+			if !notifier.called {
+				t.Error("Expected notification to be sent, but it wasn't")
+			}
 
-	if notifier.lastStatus.TicketsLeft != expectedNotification.TicketsLeft {
-		t.Errorf("Expected tickets left %d, got %d", expectedNotification.TicketsLeft, notifier.lastStatus.TicketsLeft)
-	}
-
-	if notifier.lastStatus.Enabled != expectedNotification.Enabled {
-		t.Errorf("Expected queue enabled %t, got %t", expectedNotification.Enabled, notifier.lastStatus.Enabled)
+			if diff := cmp.Diff(expectedNotification, notifier.lastSentStatus); diff != "" {
+				t.Errorf("Notification mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -209,8 +201,9 @@ func TestCheckAndProcessStatus_WhenQueueDisabledAndStateNotChanged_DoesNotTrigge
 	if err != nil {
 		t.Fatalf("Expected successful execution, but execution returned error: %v", err)
 	}
+
 	if notifier.called {
-		t.Errorf("Expected no notification to be sent, but there was one %+v", notifier.lastStatus)
+		t.Errorf("Expected no notification to be sent, but there was one %+v", notifier.lastSentStatus)
 	}
 }
 
@@ -265,26 +258,13 @@ func TestCheckAndProcessStatus_WhenQueueEnabledAndTicketsLeftChanged_TriggersNot
 	if err != nil {
 		t.Fatalf("Expected successful execution, but execution returned error: %v", err)
 	}
+
 	if !notifier.called {
 		t.Error("Expected notification to be sent, but it wasn't")
 	}
 
-	// TODO: rewrite to use go cmp pkg to compare structs
-
-	if notifier.lastStatus.Name != expectedNotification.Name {
-		t.Errorf("Expected queue name %s, got %s", expectedNotification.Name, notifier.lastStatus.Name)
-	}
-
-	if notifier.lastStatus.TicketValue != expectedNotification.TicketValue {
-		t.Errorf("Expected ticket %s, got %s", expectedNotification.TicketValue, notifier.lastStatus.TicketValue)
-	}
-
-	if notifier.lastStatus.TicketsLeft != expectedNotification.TicketsLeft {
-		t.Errorf("Expected tickets left %d, got %d", expectedNotification.TicketsLeft, notifier.lastStatus.TicketsLeft)
-	}
-
-	if notifier.lastStatus.Enabled != expectedNotification.Enabled {
-		t.Errorf("Expected queue enabled %t, got %t", expectedNotification.Enabled, notifier.lastStatus.Enabled)
+	if diff := cmp.Diff(expectedNotification, notifier.lastSentStatus); diff != "" {
+		t.Errorf("Notification mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -331,6 +311,7 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 	if err == nil {
 		t.Fatal("Expected error to be returned, but there is no one.", err)
 	}
+
 	if !notifier.called {
 		t.Error("Expected notification to be sent, but it wasn't")
 	}
@@ -369,7 +350,8 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 	if err == nil {
 		t.Fatal("Expected error to be returned, but there is no one.", err)
 	}
+
 	if notifier.called {
-		t.Errorf("Expected no notification to be sent, but there was one %+v", notifier.lastStatus)
+		t.Errorf("Expected no notification to be sent, but there was one %+v", notifier.lastSentStatus)
 	}
 }
