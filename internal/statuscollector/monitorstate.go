@@ -25,7 +25,7 @@ type MonitorStateRepository struct {
 }
 
 const (
-	QueueStateKey = "queue-monitor-state:latest"
+	queueStateRedisKey = "monitor:state"
 )
 
 func NewMonitorStateRepository(redisClient *redis.Client, stateTtlSeconds int) *MonitorStateRepository {
@@ -36,7 +36,7 @@ func NewMonitorStateRepository(redisClient *redis.Client, stateTtlSeconds int) *
 }
 
 func (r *MonitorStateRepository) Get(ctx context.Context) (*MonitorState, error) {
-	stateData, err := r.redisClient.Get(ctx, QueueStateKey).Result()
+	stateData, err := r.redisClient.Get(ctx, queueStateRedisKey).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monitor state from Redis: \"%w\"", err)
 	}
@@ -59,7 +59,7 @@ func (r *MonitorStateRepository) Save(ctx context.Context, state *MonitorState) 
 		return fmt.Errorf("failed to marshal monitor state: \"%w\"", err)
 	}
 
-	if err := r.redisClient.Set(ctx, QueueStateKey, stateData, r.stateTtl).Err(); err != nil {
+	if err := r.redisClient.Set(ctx, queueStateRedisKey, stateData, r.stateTtl).Err(); err != nil {
 		return fmt.Errorf("failed to save monitor state to Redis: \"%w\"", err)
 	}
 

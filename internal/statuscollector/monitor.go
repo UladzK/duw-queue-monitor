@@ -40,6 +40,10 @@ func (h *QueueMonitor) Init(initState *MonitorState) {
 	h.log.Info("QueueMonitor initialized with state: %+v", h.state)
 }
 
+func (h *QueueMonitor) GetState() *MonitorState {
+	return h.state
+}
+
 func (h *QueueMonitor) CheckAndProcessStatus() error {
 	newState, err := h.collector.GetQueueStatus()
 	if err != nil {

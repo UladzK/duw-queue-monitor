@@ -32,7 +32,10 @@ func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 	for {
 		select {
 		case <-ctx.Done():
-			h.log.Info("Received shutdown signal. Stopped monitor loop")
+			h.log.Info("Received shutdown signal. Saving monitor state and stopping status collector...")
+			h.saveMonitorState(ctx)
+
+			h.log.Info("Stopped monitor loop")
 			done <- true
 			return
 		default:
@@ -44,6 +47,21 @@ func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second) // TODO: will be sleeping even after SIGTERM. ticket is the better option?
 		}
 	}
+}
+
+func (h *Runner) saveMonitorState(ctx context.Context) {
+
+	latestState := h.monitor.GetState()
+	if latestState == nil {
+		h.log.Error("Failed to save monitor state", fmt.Errorf("monitor state is nil"))
+		return
+	}
+
+	if err := h.stateRepo.Save(ctx, latestState); err != nil {
+		h.log.Error("Failed to save monitor state to Redis", err)
+	}
+
+	h.log.Info("Monitor state saved successfully to Redis")
 }
 
 func (h *Runner) initMonitorState(ctx context.Context) {
