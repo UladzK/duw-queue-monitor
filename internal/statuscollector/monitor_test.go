@@ -14,7 +14,7 @@ type mockNotifier struct {
 	lastStatus *Queue
 }
 
-func (f *mockNotifier) SendGeneralQueueStatusUpdatePush(queueName string, enabled bool, actualTicket string, numberOfTicketsLeft int) error {
+func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, enabled bool, actualTicket string, numberOfTicketsLeft int) error {
 	f.called = true
 
 	if f.shouldFail {
@@ -268,6 +268,8 @@ func TestCheckAndProcessStatus_WhenQueueEnabledAndTicketsLeftChanged_TriggersNot
 	if !notifier.called {
 		t.Error("Expected notification to be sent, but it wasn't")
 	}
+
+	// TODO: rewrite to use go cmp pkg to compare structs
 
 	if notifier.lastStatus.Name != expectedNotification.Name {
 		t.Errorf("Expected queue name %s, got %s", expectedNotification.Name, notifier.lastStatus.Name)

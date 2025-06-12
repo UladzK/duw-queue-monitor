@@ -39,6 +39,7 @@ type Queue struct {
 }
 
 const (
+	// TODO: using this pre-defined int Id can be a problem. what if it rotates? also check for queue name for extra safety
 	odbiorKartyQueueId = 24        // ID of the queue we are interested in
 	wroclawCityName    = "Wrocław" // City name for the queue we are interested in
 )

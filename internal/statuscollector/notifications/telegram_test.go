@@ -63,7 +63,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenAvailableMessage_SendsNotification
 	sut := NewTelegramNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdatePush("test-queue", true, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", true, "K80", 10)
 
 	// Assert
 	if err != nil {
@@ -124,7 +124,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenUnavailableMessage_SendsNotificati
 	sut := NewTelegramNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdatePush("test-queue", false, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", false, "K80", 10)
 
 	// Assert
 	if err != nil {

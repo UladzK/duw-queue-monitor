@@ -74,7 +74,7 @@ func (h *QueueMonitor) statusChanged(newQueueStatus *Queue) bool {
 }
 
 func (h *QueueMonitor) pushQueueEnabledNotification(newQueueStatus *Queue) error {
-	if err := h.notifier.SendGeneralQueueStatusUpdatePush(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
+	if err := h.notifier.SendGeneralQueueStatusUpdateNotification(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
 		return fmt.Errorf("error sending queue enabled notifiication: %w", err)
 	}
 
