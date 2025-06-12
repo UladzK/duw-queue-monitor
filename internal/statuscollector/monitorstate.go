@@ -36,7 +36,6 @@ func NewMonitorStateRepository(redisClient *redis.Client, stateTtlSeconds int) *
 }
 
 func (r *MonitorStateRepository) Get(ctx context.Context) (*MonitorState, error) {
-
 	stateData, err := r.redisClient.Get(ctx, QueueStateKey).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monitor state from Redis: \"%w\"", err)

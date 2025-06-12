@@ -33,51 +33,86 @@ func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(queueName string
 	return nil
 }
 
-func TestCheckAndProcessStatus_WhenStateIsNotInitializedAndQueueIsNotActive_DoesNotTriggerNotification(t *testing.T) {
+func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTransition(t *testing.T) {
 	// Arrange
-	mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, `{
-			"result": {
-				"Wrocław": [{
-					"id": 24,
-					"name": "Odbior karty",
-					"ticket_value": "",
-					"tickets_left": 0,
-					"active": false,
-					"enabled": false
-				}]
-			}
-		}`)
-	}))
-	defer mockDuwApi.Close()
-
-	cfg := &Config{
-		QueueMonitor: QueueMonitorConfig{
-			StatusApiUrl: mockDuwApi.URL,
+	const queueName = "Odbior karty"
+	testConditions := []struct {
+		name                     string
+		newState                 Queue
+		notificationShouldBeSent bool
+		expectedNotification     *Queue
+	}{
+		{
+			"Condition 1: \"queue is not active, state was not initialized, queue becomes active.\" Expected: \"notification should not be sent.\"",
+			Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "", TicketsLeft: 0},
+			false,
+			nil,
+		},
+		{
+			"Condition 2: \"queue is active, state was not initialized.\" Expected: \"notification should be sent.\"",
+			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
+			true,
+			&Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
 		},
 	}
 
-	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
-	logger := logger.NewLogger(&logger.Config{
-		Level: "error"})
+	for _, tc := range testConditions {
+		t.Run(tc.name, func(t *testing.T) {
 
-	notifier := &mockNotifier{}
+			mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{
+					"result": {
+						"Wrocław": [{
+							"id": 24,
+							"name": "%v",
+							"ticket_value": "%v",
+							"tickets_left": %v,
+							"active": %v,
+							"enabled": %v
+						}]
+					}
+				}`, queueName,
+					tc.newState.TicketValue,
+					tc.newState.TicketsLeft,
+					tc.newState.Active,
+					tc.newState.Enabled)
+			}))
+			defer mockDuwApi.Close()
 
-	sut := NewQueueMonitor(cfg, logger, collector, notifier)
+			cfg := &Config{
+				QueueMonitor: QueueMonitorConfig{
+					StatusApiUrl: mockDuwApi.URL,
+				},
+			}
 
-	// Act
-	err := sut.CheckAndProcessStatus()
+			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
+			logger := logger.NewLogger(&logger.Config{
+				Level: "error"})
 
-	// Assert
-	if err != nil {
-		t.Fatalf("Expected successful execution, but execution returned error: %v", err)
-	}
-	if notifier.called {
-		t.Errorf("Expected no notification to be sent.\", but there was one %+v", notifier.lastSentStatus)
+			notifier := &mockNotifier{}
+
+			sut := NewQueueMonitor(cfg, logger, collector, notifier)
+
+			// Act
+			err := sut.CheckAndProcessStatus()
+
+			// Assert
+			if err != nil {
+				t.Fatalf("Expected successful execution, but execution returned error: %v", err)
+			}
+
+			if notifier.called != tc.notificationShouldBeSent {
+				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.called)
+			}
+
+			if diff := cmp.Diff(notifier.lastSentStatus, tc.expectedNotification); diff != "" {
+				t.Errorf("Notification mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
-func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransition(t *testing.T) {
+func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTransition(t *testing.T) {
 	// Arrange
 	const queueName = "Odbior karty"
 	testConditions := []struct {
@@ -128,22 +163,6 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 			false,
 			nil,
 		},
-		{
-			"Condition 6: \"queue was not active, state was not initialized, queue becomes active.\" Expected: \"notification should be sent.\"",
-			false,
-			MonitorState{QueueActive: false, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: ""},
-			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
-			true,
-			&Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
-		},
-		{
-			"Condition 7: \"queue was active, state was not initialized.\" Expected: \"notification should be sent.\"",
-			false,
-			MonitorState{QueueActive: false, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: ""},
-			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
-			true,
-			&Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
-		},
 	}
 
 	for _, tc := range testConditions {
@@ -182,11 +201,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 			notifier := &mockNotifier{}
 
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
-			sut.isStateInitialized = tc.isStateInitialized
-			sut.state.QueueActive = tc.initialState.QueueActive
-			sut.state.QueueEnabled = tc.initialState.QueueEnabled
-			sut.state.TicketsLeft = tc.initialState.TicketsLeft
-			sut.state.LastTicketProcessed = tc.initialState.LastTicketProcessed
+			sut.Init(&tc.initialState)
 
 			// Act
 			err := sut.CheckAndProcessStatus()
@@ -228,10 +243,12 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 	notifier := &mockNotifier{shouldFail: true}
 
 	sut := NewQueueMonitor(cfg, logger, collector, notifier)
-	sut.isStateInitialized = true
-	sut.state.QueueActive = true
-	sut.state.QueueEnabled = true
-	sut.state.TicketsLeft = 10
+	sut.Init(&MonitorState{
+		QueueActive:         true,
+		QueueEnabled:        true,
+		TicketsLeft:         10,
+		LastTicketProcessed: "K123",
+	})
 
 	// Act
 	err := sut.CheckAndProcessStatus()

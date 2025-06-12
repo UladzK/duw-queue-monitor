@@ -30,10 +30,8 @@ func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector
 }
 
 func (h *QueueMonitor) Init(initState *MonitorState) {
-
 	if initState == nil {
-		h.log.Info("State is nil, no initialization performed")
-		return
+		panic("QueueMonitor.Init called with nil state. This should not happen")
 	}
 
 	h.state = initState

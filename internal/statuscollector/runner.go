@@ -26,13 +26,7 @@ func NewRunner(cfg *Config, log *logger.Logger, monitor *QueueMonitor, stateRepo
 
 func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 	h.log.Info("Initializing monitor state")
-
-	latestState, err := h.stateRepo.Get(ctx)
-	if err != nil {
-		h.log.Error("failed to get latest monitor state from Redis", err)
-	}
-
-	h.monitor.Init(latestState)
+	h.initMonitorState(ctx)
 
 	h.log.Info("Started monitor loop")
 	for {
@@ -50,4 +44,24 @@ func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second) // TODO: will be sleeping even after SIGTERM. ticket is the better option?
 		}
 	}
+}
+
+func (h *Runner) initMonitorState(ctx context.Context) {
+	latestState, err := h.stateRepo.Get(ctx)
+	if err != nil {
+		h.log.Error("failed to get latest monitor state from Redis", err)
+	}
+
+	if latestState == nil {
+		latestState = &MonitorState{
+			QueueActive:         false,
+			QueueEnabled:        false,
+			LastTicketProcessed: "",
+			TicketsLeft:         0,
+		}
+
+		h.log.Info("No previous monitor state found, initializing with default values")
+	}
+
+	h.monitor.Init(latestState)
 }
