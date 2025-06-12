@@ -29,6 +29,19 @@ func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector
 	}
 }
 
+func (h *QueueMonitor) Init(initState *MonitorState) {
+
+	if initState == nil {
+		h.log.Info("State is nil, no initialization performed")
+		return
+	}
+
+	h.state = initState
+	h.isStateInitialized = true
+
+	h.log.Info("QueueMonitor initialized with state: %+v", h.state)
+}
+
 func (h *QueueMonitor) CheckAndProcessStatus() error {
 	newState, err := h.collector.GetQueueStatus()
 	if err != nil {

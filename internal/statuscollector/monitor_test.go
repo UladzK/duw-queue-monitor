@@ -52,12 +52,12 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitializedAndQueueIsNotActive_Does
 	defer mockDuwApi.Close()
 
 	cfg := &Config{
-		StatusCollector: StatusCollectorConfig{
+		QueueMonitor: QueueMonitorConfig{
 			StatusApiUrl: mockDuwApi.URL,
 		},
 	}
 
-	collector := NewStatusCollector(&cfg.StatusCollector, &http.Client{})
+	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 	logger := logger.NewLogger(&logger.Config{
 		Level: "error"})
 
@@ -170,12 +170,12 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 			defer mockDuwApi.Close()
 
 			cfg := &Config{
-				StatusCollector: StatusCollectorConfig{
+				QueueMonitor: QueueMonitorConfig{
 					StatusApiUrl: mockDuwApi.URL,
 				},
 			}
 
-			collector := NewStatusCollector(&cfg.StatusCollector, &http.Client{})
+			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 			logger := logger.NewLogger(&logger.Config{
 				Level: "error"})
 
@@ -216,12 +216,12 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 	defer mockDuwApi.Close()
 
 	cfg := &Config{
-		StatusCollector: StatusCollectorConfig{
+		QueueMonitor: QueueMonitorConfig{
 			StatusApiUrl: mockDuwApi.URL,
 		},
 	}
 
-	collector := NewStatusCollector(&cfg.StatusCollector, &http.Client{})
+	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 	logger := logger.NewLogger(&logger.Config{
 		Level: "error"})
 
@@ -265,12 +265,12 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 	defer mockDuwApi.Close()
 
 	cfg := &Config{
-		StatusCollector: StatusCollectorConfig{
+		QueueMonitor: QueueMonitorConfig{
 			StatusApiUrl: mockDuwApi.URL,
 		},
 	}
 
-	collector := NewStatusCollector(&cfg.StatusCollector, &http.Client{})
+	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 	logger := logger.NewLogger(&logger.Config{
 		Level: "error"})
 

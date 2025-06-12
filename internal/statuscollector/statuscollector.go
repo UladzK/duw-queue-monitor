@@ -10,7 +10,7 @@ import (
 // StatusCollector is responsible for collecting the status of a specific queue from the DUW API
 // Note: only Wrocław city is supported for now, and only the queue with ID 24 (Odbiór Kart) is supported
 type StatusCollector struct {
-	cfg        *StatusCollectorConfig
+	cfg        *QueueMonitorConfig
 	httpClient *http.Client
 }
 
@@ -44,7 +44,7 @@ const (
 	wroclawCityName    = "Wrocław" // City name for the queue we are interested in
 )
 
-func NewStatusCollector(cfg *StatusCollectorConfig, httpClient *http.Client) *StatusCollector {
+func NewStatusCollector(cfg *QueueMonitorConfig, httpClient *http.Client) *StatusCollector {
 	return &StatusCollector{
 		cfg:        cfg,
 		httpClient: httpClient,

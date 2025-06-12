@@ -12,6 +12,7 @@ import (
 	"uladzk/duw_kolejka_checker/internal/statuscollector/notifications"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -54,7 +55,7 @@ func buildLogger() (*logger.Logger, error) {
 
 func buildRunner(log *logger.Logger) (*statuscollector.Runner, error) {
 	var cfg statuscollector.Config
-	// TODO: implement Load() method in Confis
+	// TODO: implement Load() method in Configs
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err
 	}
@@ -66,11 +67,18 @@ func buildRunner(log *logger.Logger) (*statuscollector.Runner, error) {
 		},
 	}
 
-	collector := statuscollector.NewStatusCollector(&cfg.StatusCollector, httpClient)
+	opt, err := redis.ParseURL(cfg.QueueMonitor.RedisConString)
+	if err != nil {
+		return nil, err
+	}
+	redisClient := redis.NewClient(opt)
+
+	stateRepo := statuscollector.NewMonitorStateRepository(redisClient, cfg.QueueMonitor.StateTtlSeconds)
+	collector := statuscollector.NewStatusCollector(&cfg.QueueMonitor, httpClient)
 	notifier := buildNotifier(&cfg, log, httpClient)
 	monitor := statuscollector.NewQueueMonitor(&cfg, log, collector, notifier)
 
-	runner := statuscollector.NewRunner(&cfg, log, monitor)
+	runner := statuscollector.NewRunner(&cfg, log, monitor, stateRepo)
 	return runner, nil
 }
 

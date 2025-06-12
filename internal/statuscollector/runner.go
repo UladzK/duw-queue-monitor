@@ -9,20 +9,30 @@ import (
 
 // Runner is responsible for the main loop of the status collector which periodically checks the queue status using the QueueMonitor.
 type Runner struct {
-	cfg     *Config
-	log     *logger.Logger
-	monitor *QueueMonitor
+	cfg       *Config
+	log       *logger.Logger
+	monitor   *QueueMonitor
+	stateRepo *MonitorStateRepository
 }
 
-func NewRunner(cfg *Config, log *logger.Logger, monitor *QueueMonitor) *Runner {
+func NewRunner(cfg *Config, log *logger.Logger, monitor *QueueMonitor, stateRepo *MonitorStateRepository) *Runner {
 	return &Runner{
-		cfg:     cfg,
-		log:     log,
-		monitor: monitor,
+		cfg:       cfg,
+		log:       log,
+		monitor:   monitor,
+		stateRepo: stateRepo,
 	}
 }
 
 func (h *Runner) Run(ctx context.Context, done chan<- bool) {
+	h.log.Info("Initializing monitor state")
+
+	latestState, err := h.stateRepo.Get(ctx)
+	if err != nil {
+		h.log.Error("failed to get latest monitor state from Redis", err)
+	}
+
+	h.monitor.Init(latestState)
 
 	h.log.Info("Started monitor loop")
 	for {
