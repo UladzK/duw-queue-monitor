@@ -78,7 +78,7 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 			sut := NewTelegramNotifier(cfg, logger, &http.Client{})
 
 			// Act
-			err := sut.SendGeneralQueueStatusUpdateNotification(tc.queueName, tc.queueEnabled, tc.actualTicket, tc.numberOfTicketsLeft)
+			err := sut.SendGeneralQueueStatusUpdateNotification(tc.queueName, true, tc.queueEnabled, tc.actualTicket, tc.numberOfTicketsLeft)
 
 			// Assert
 			if err != nil {

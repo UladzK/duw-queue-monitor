@@ -57,8 +57,7 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
-	// needed because otherwise DUW's API does not return data
-	req.Header.Set("User-Agent", "")
+	req.Header.Set("User-Agent", "") // needed because otherwise DUW's API does not return data
 
 	//TODO: add retries with exponential backoff. including non-OK status codes
 	resp, err := s.httpClient.Do(req)
@@ -68,17 +67,22 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get queue status, status code: %d", resp.StatusCode)
+		errRespBody, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			errRespBody = []byte(fmt.Sprintf("failed to read response body: %v", readErr))
+		}
+
+		return nil, fmt.Errorf("failed to get queue status, status code: %d. response: %v", resp.StatusCode, string(errRespBody))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: \"%w\"", err)
 	}
 
 	var response Response
 	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse response body: %w", err)
+		return nil, fmt.Errorf("failed to parse response body: \"%w\". body text: %v", err, string(body))
 	}
 
 	for _, queue := range response.Result[wroclawCityName] {
