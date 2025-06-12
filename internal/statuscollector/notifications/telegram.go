@@ -28,7 +28,7 @@ type SendMessageChannelRequest struct {
 	Text   string `json:"text"`
 }
 
-func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
+func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
 	channelName := fmt.Sprintf("@%s", s.cfg.BroadcastChannelName)
 	botApiFullUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.BaseApiUrl, s.cfg.BotToken)
 
