@@ -83,7 +83,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 	testConditions := []struct {
 		name                     string
 		isStateInitialized       bool
-		initialState             QueueState
+		initialState             MonitorState
 		newState                 Queue
 		notificationShouldBeSent bool
 		expectedNotification     *Queue
@@ -91,7 +91,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 		{
 			"Condition 1: \"queue was active, state was initialized, no changes.\" Expected: \"notification shoud NOT be sent.\"",
 			true,
-			QueueState{queueActive: true, queueEnabled: true, ticketsLeft: 10, lastTicketProcessed: "K123"},
+			MonitorState{QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
 			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
 			false,
 			nil,
@@ -99,7 +99,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 		{
 			"Condition 2: \"queue was active, state was initialized, queue becomes not active.\" Expected: \"notification should be sent.\"",
 			true,
-			QueueState{queueActive: true, queueEnabled: true, ticketsLeft: 10, lastTicketProcessed: "K123"},
+			MonitorState{QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
 			Queue{Name: queueName, Active: false, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
 			true,
 			&Queue{Name: queueName, Active: false, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
@@ -107,7 +107,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 		{
 			"Condition 3: \"queue was active, state was initialized, queue remains active, status becomes not enabled.\" Expected: \"notification should be sent.\"",
 			true,
-			QueueState{queueActive: true, queueEnabled: true, ticketsLeft: 10, lastTicketProcessed: "K123"},
+			MonitorState{QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
 			Queue{Name: queueName, Active: true, Enabled: false, TicketValue: "K123", TicketsLeft: 0},
 			true,
 			&Queue{Name: queueName, Active: true, Enabled: false, TicketValue: "K123", TicketsLeft: 0},
@@ -115,7 +115,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 		{
 			"Condition 4: \"queue was active, state was initialized, queue remains active and enabled, ticket left changed.\" Expected: \"notification should be sent.\"",
 			true,
-			QueueState{queueActive: true, queueEnabled: true, ticketsLeft: 10, lastTicketProcessed: "K123"},
+			MonitorState{QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
 			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 5},
 			true,
 			&Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 5},
@@ -123,7 +123,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 		{
 			"Condition 5: \"queue was active, state was initialized, queue remains active and enabled, only ticket value changed.\" Expected: \"notification should NOT be sent.\"",
 			true,
-			QueueState{queueActive: true, queueEnabled: true, ticketsLeft: 10, lastTicketProcessed: "K123"},
+			MonitorState{QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
 			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K456", TicketsLeft: 10},
 			false,
 			nil,
@@ -131,7 +131,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 		{
 			"Condition 6: \"queue was not active, state was not initialized, queue becomes active.\" Expected: \"notification should be sent.\"",
 			false,
-			QueueState{queueActive: false, queueEnabled: false, ticketsLeft: 0, lastTicketProcessed: ""},
+			MonitorState{QueueActive: false, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: ""},
 			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
 			true,
 			&Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
@@ -139,7 +139,7 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 		{
 			"Condition 7: \"queue was active, state was not initialized.\" Expected: \"notification should be sent.\"",
 			false,
-			QueueState{queueActive: false, queueEnabled: false, ticketsLeft: 0, lastTicketProcessed: ""},
+			MonitorState{QueueActive: false, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: ""},
 			Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
 			true,
 			&Queue{Name: queueName, Active: true, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
@@ -182,11 +182,11 @@ func TestCheckAndProcessStatus_WhenQueueWasActive_CorrectlyHandlesStrateTransiti
 			notifier := &mockNotifier{}
 
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
-			sut.state.isStateInitialized = tc.isStateInitialized
-			sut.state.queueActive = tc.initialState.queueActive
-			sut.state.queueEnabled = tc.initialState.queueEnabled
-			sut.state.ticketsLeft = tc.initialState.ticketsLeft
-			sut.state.lastTicketProcessed = tc.initialState.lastTicketProcessed
+			sut.isStateInitialized = tc.isStateInitialized
+			sut.state.QueueActive = tc.initialState.QueueActive
+			sut.state.QueueEnabled = tc.initialState.QueueEnabled
+			sut.state.TicketsLeft = tc.initialState.TicketsLeft
+			sut.state.LastTicketProcessed = tc.initialState.LastTicketProcessed
 
 			// Act
 			err := sut.CheckAndProcessStatus()
@@ -228,10 +228,10 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 	notifier := &mockNotifier{shouldFail: true}
 
 	sut := NewQueueMonitor(cfg, logger, collector, notifier)
-	sut.state.isStateInitialized = true
-	sut.state.queueActive = true
-	sut.state.queueEnabled = true
-	sut.state.ticketsLeft = 10
+	sut.isStateInitialized = true
+	sut.state.QueueActive = true
+	sut.state.QueueEnabled = true
+	sut.state.TicketsLeft = 10
 
 	// Act
 	err := sut.CheckAndProcessStatus()
@@ -277,10 +277,10 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 	notifier := &mockNotifier{shouldFail: true}
 
 	sut := NewQueueMonitor(cfg, logger, collector, notifier)
-	sut.state.isStateInitialized = true
-	sut.state.queueActive = true
-	sut.state.queueEnabled = true
-	sut.state.ticketsLeft = 10
+	sut.isStateInitialized = true
+	sut.state.QueueActive = true
+	sut.state.QueueEnabled = true
+	sut.state.TicketsLeft = 10
 
 	// Act
 	err := sut.CheckAndProcessStatus()
