@@ -38,38 +38,32 @@ func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector
 }
 
 func (h *QueueMonitor) CheckAndProcessStatus() error {
-
 	newState, err := h.collector.GetQueueStatus()
 	if err != nil {
 		return fmt.Errorf("error getting queue status: %w", err)
 	}
 
-	// If the monitor has just started while queue has not been enabled yet, we don't want to send any notifications.
+	// Skip notification if not initialized (starting new day run) and queue is not active yet
 	if !h.state.isStateInitialized && !newState.Active {
-		return nil
-	}
-
-	if !h.state.isStateInitialized || h.statusChanged(newState) {
-		if err := h.pushQueueEnabledNotification(newState); err != nil {
-			return err
-		}
+		h.log.Debug("Queue is not active and state is not initialized, skipping notification")
 
 		h.updateState(newState)
-
 		return nil
 	}
 
-	if !newState.Enabled {
-		return nil
-	}
+	// Notify if state is not initialized, or status changed, or tickets left changed (when enabled)
+	shouldNotifyStatusUpdate := !h.state.isStateInitialized ||
+		h.statusChanged(newState) ||
+		(newState.Enabled && h.state.ticketsLeft != newState.TicketsLeft)
 
-	if h.state.ticketsLeft != newState.TicketsLeft {
-		if err := h.pushQueueEnabledNotification(newState); err != nil {
+	if shouldNotifyStatusUpdate {
+		if err := h.pushGeneralQueueStatusUpdateNotification(newState); err != nil {
 			return err
 		}
-
-		h.updateState(newState)
 	}
+
+	h.updateState(newState)
+	h.log.Debug("Queue status updated: %+v", newState)
 
 	return nil
 }
@@ -78,8 +72,7 @@ func (h *QueueMonitor) statusChanged(newQueueStatus *Queue) bool {
 	return h.state.queueActive != newQueueStatus.Active || h.state.queueEnabled != newQueueStatus.Enabled
 }
 
-func (h *QueueMonitor) pushQueueEnabledNotification(newQueueStatus *Queue) error {
-	if err := h.notifier.SendGeneralQueueStatusUpdateNotification(newQueueStatus.Name, newQueueStatus.Enabled, newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
+func (h *QueueMonitor) pushGeneralQueueStatusUpdateNotification(newQueueStatus *Queue) error {
 	if err := h.notifier.SendGeneralQueueStatusUpdateNotification(newQueueStatus.Name, newQueueStatus.Active, newQueueStatus.Enabled,
 		newQueueStatus.TicketValue, newQueueStatus.TicketsLeft); err != nil {
 		return fmt.Errorf("error sending queue enabled notifiication: %w", err)
