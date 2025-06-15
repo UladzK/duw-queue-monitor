@@ -58,7 +58,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenAvailableMessage_SendsNotification
 	sut := NewPushOverNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdatePush("test-queue", true, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", true, true, "K80", 10)
 
 	// Assert
 	if err != nil {
@@ -116,13 +116,14 @@ func TestSendGeneralQueueStatusUpdatePush_WhenUnavailableMessage_SendsNotificati
 	sut := NewPushOverNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdatePush("test-queue", false, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", true, false, "K80", 10)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("Expected successful notification sending, but got error: \"%v\"", err)
 	}
 }
+
 func TestSendGeneralQueueStatusUpdatePush_WhenSendNotificationFailed_ReturnsError(t *testing.T) {
 	// Arrange
 	mockPushOverApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +144,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenSendNotificationFailed_ReturnsErro
 	sut := NewPushOverNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdatePush("test-queue", true, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", true, true, "K80", 10)
 
 	// Assert
 	if err == nil {
