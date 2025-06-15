@@ -32,7 +32,7 @@ func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 	for {
 		select {
 		case <-ctx.Done():
-			h.log.Info("Received shutdown signal. Saving monitor state and stopping status collector...")
+			h.log.Info("Received shutdown signal. Saving monitor state and stopping monitor loop")
 			h.saveMonitorState(ctx)
 
 			h.log.Info("Stopped monitor loop")
