@@ -35,6 +35,7 @@ func NewMonitorStateRepository(redisClient *redis.Client, stateTtlSeconds int) *
 	}
 }
 
+// TODO: add retries
 func (r *MonitorStateRepository) Get(ctx context.Context) (*MonitorState, error) {
 	stateData, err := r.redisClient.Get(ctx, queueStateRedisKey).Result()
 

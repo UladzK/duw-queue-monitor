@@ -37,7 +37,7 @@ func (h *QueueMonitor) Init(initState *MonitorState) {
 	h.state = initState
 	h.isStateInitialized = true
 
-	h.log.Info("QueueMonitor initialized with state: %+v", h.state)
+	h.log.Info("QueueMonitor initialized with state:", "initState", initState)
 }
 
 func (h *QueueMonitor) GetState() *MonitorState {
@@ -70,7 +70,7 @@ func (h *QueueMonitor) CheckAndProcessStatus() error {
 	}
 
 	h.updateState(newState)
-	h.log.Debug("Queue status updated: %+v", newState)
+	h.log.Debug("Queue status updated:", "newState", newState)
 
 	return nil
 }
