@@ -37,12 +37,12 @@ func NewMonitorStateRepository(redisClient *redis.Client, stateTtlSeconds int) *
 
 func (r *MonitorStateRepository) Get(ctx context.Context) (*MonitorState, error) {
 	stateData, err := r.redisClient.Get(ctx, queueStateRedisKey).Result()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get monitor state from Redis: \"%w\"", err)
-	}
 
-	if stateData == "" {
+	switch {
+	case err == redis.Nil:
 		return nil, nil // That's fine, the state is not initialized yet or expired
+	case err != nil:
+		return nil, fmt.Errorf("failed to get monitor state from Redis: \"%w\"", err)
 	}
 
 	var state MonitorState

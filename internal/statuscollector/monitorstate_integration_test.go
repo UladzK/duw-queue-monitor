@@ -11,7 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func initDevContainer(ctx context.Context) testcontainers.Container {
+func initDevContainer(ctx context.Context, t *testing.T) testcontainers.Container {
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:latest",
 		Name:         "monitor-state-redis-integration-test",
@@ -24,21 +24,22 @@ func initDevContainer(ctx context.Context) testcontainers.Container {
 		Started:          true,
 	})
 	if err != nil {
-		panic(fmt.Errorf("Failed to start Redis container: \"%v\". Test cannot be executed", err))
+		t.Fatalf("Failed to start Redis container: \"%v\". Test cannot be executed", err)
 	}
 
 	return redisC
 }
 
-func TestGet_WhenRedisIsAvailable_GetsAndSavesState(t *testing.T) {
+// TODO: add env vars to split up running unit and integration tests
+func TestGetAndSave_WhenRedisIsAvailable_GetsAndSavesState(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
-	redisC := initDevContainer(ctx)
+	redisC := initDevContainer(ctx, t)
 	defer testcontainers.CleanupContainer(t, redisC)
 
 	endpoint, err := redisC.Endpoint(ctx, "")
 	if err != nil {
-		panic(fmt.Errorf("Failed to get Redis endpoint: \"%v\". Test cannot be executed", err))
+		t.Fatalf("Failed to get Redis endpoint: \"%v\". Test cannot be executed", err)
 	}
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: endpoint,
@@ -59,18 +60,47 @@ func TestGet_WhenRedisIsAvailable_GetsAndSavesState(t *testing.T) {
 
 	// Assert
 	if saveErr != nil {
-		t.Fatalf("Expected to save state successfully, but: \"%v\"", saveErr)
+		t.Errorf("Expected to save state successfully, but: \"%v\"", saveErr)
 	}
 
 	if getErr != nil {
-		t.Fatalf("Expected to get state successfully, but: \"%v\"", getErr)
+		t.Errorf("Expected to get state successfully, but: \"%v\"", getErr)
 	}
 
 	if returnedState == nil {
-		t.Fatal("Expected to get a non-nil state, but: got nil")
+		t.Error("Expected to get a non-nil state, but: got nil")
 	}
 
 	if diff := cmp.Diff(testState, returnedState); diff != "" {
 		t.Errorf("Get state mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGet_WhenNoStateFoundInRedis_ReturnsNilWithoutError(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	redisC := initDevContainer(ctx, t)
+	defer testcontainers.CleanupContainer(t, redisC)
+
+	endpoint, err := redisC.Endpoint(ctx, "")
+	if err != nil {
+		panic(fmt.Errorf("Failed to get Redis endpoint: \"%v\". Test cannot be executed", err))
+	}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: endpoint,
+	})
+
+	sut := NewMonitorStateRepository(redisClient, 120)
+
+	// Act
+	returnedState, getErr := sut.Get(ctx)
+
+	// Assert
+	if getErr != nil {
+		t.Errorf("Expected to get state successfully, but: \"%v\"", getErr)
+	}
+
+	if returnedState != nil {
+		t.Errorf("Expected to get a nil state, but: got %v", returnedState)
 	}
 }
