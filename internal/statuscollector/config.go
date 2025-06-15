@@ -12,6 +12,6 @@ type Config struct {
 
 type QueueMonitorConfig struct {
 	StatusApiUrl    string `env:"STATUS_API_URL" envDefault:"https://rezerwacje.duw.pl/status_kolejek/query.php?status="`
-	RedisConString  string `env:"STATE_REDIS_CONNECTION_STRING" envDefault:"redis://localhost:6379/0"`
+	RedisConString  string `env:"STATE_REDIS_CONNECTION_STRING,required"`
 	StateTtlSeconds int    `env:"STATE_TTL_SECONDS" envDefault:"60"`
 }
