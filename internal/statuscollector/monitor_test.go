@@ -163,6 +163,14 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			false,
 			nil,
 		},
+		{
+			"Condition 6: \"queue was active, state was initialized, queue remains active and enabled, ticket value is empty and not changed.\" Expected: \"notification should NOT be sent.\"",
+			true,
+			MonitorState{QueueActive: true, QueueEnabled: true, TicketsLeft: 100, LastTicketProcessed: ""},
+			Queue{Name: queueName, Active: true, Enabled: true, TicketsLeft: 100, TicketValue: ""},
+			false,
+			nil,
+		},
 	}
 
 	for _, tc := range testConditions {
