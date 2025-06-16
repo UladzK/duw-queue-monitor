@@ -3,8 +3,9 @@ package notifications
 import "fmt"
 
 const (
-	msgQueueAvailable   = "Queue %s is available! Actual ticket: %s. Tickets left: %d."
-	msgQueueUnavailable = "Queue %s is unavailable."
+	msgQueueAvailableGeneral = "🔔 Kolejka **%s** jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: **%s**\n🧾 Pozostało biletów: **%d**"
+	msgQueueAvailableShort   = "🔔 Kolejka **%s** jest teraz dostępna!\n🧾 Pozostało biletów: **%d**"
+	msgQueueUnavailable      = "💤 Kolejka **%s** jest obecnie niedostępna."
 )
 
 func buildQueueAvailableMsg(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) string {
@@ -12,5 +13,8 @@ func buildQueueAvailableMsg(queueName string, queueEnabled bool, actualTicket st
 		return fmt.Sprintf(msgQueueUnavailable, queueName)
 	}
 
-	return fmt.Sprintf(msgQueueAvailable, queueName, actualTicket, numberOfTicketsLeft)
+	if actualTicket == "" {
+		return fmt.Sprintf(msgQueueAvailableShort, queueName, numberOfTicketsLeft)
+	}
+	return fmt.Sprintf(msgQueueAvailableGeneral, queueName, actualTicket, numberOfTicketsLeft)
 }

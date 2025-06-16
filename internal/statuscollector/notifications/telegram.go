@@ -29,6 +29,7 @@ type SendMessageChannelRequest struct {
 }
 
 func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
+	// todo: move to object fields
 	channelName := fmt.Sprintf("@%s", s.cfg.BroadcastChannelName)
 	botApiFullUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.BaseApiUrl, s.cfg.BotToken)
 

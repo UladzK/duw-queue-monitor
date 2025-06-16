@@ -21,8 +21,9 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 		numberOfTicketsLeft int
 		expectedMessage     string
 	}{
-		{"Test with available queue", true, "test-queue", "K80", 10, "Queue test-queue is available! Actual ticket: K80. Tickets left: 10."},
-		{"Test with unavailable queue", false, "test-queue", "K80", 10, "Queue test-queue is unavailable."},
+		{"Test with available queue", true, "test-queue", "K80", 10, "🔔 Kolejka **test-queue** jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: **K80**\n🧾 Pozostało biletów: **10**"},
+		{"Test with unavailable queue", false, "test-queue", "K80", 10, "💤 Kolejka **test-queue** jest obecnie niedostępna."},
+		{"Test with available queue without actual ticket", true, "Odbiór karty", "", 5, "🔔 Kolejka **Odbiór karty** jest teraz dostępna!\n🧾 Pozostało biletów: **5**"},
 	}
 
 	for _, tc := range testConditions {
