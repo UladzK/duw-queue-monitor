@@ -8,6 +8,7 @@ import (
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
+// todo: rewrite using table tests
 func TestSendGeneralQueueStatusUpdatePush_WhenAvailableMessage_SendsNotificationToPushOverApiWithCorrectFormatAndTemplate(t *testing.T) {
 	// Arrange
 	mockPushOverApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +35,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenAvailableMessage_SendsNotification
 		}
 
 		message := r.FormValue("message")
-		expectedMessage := "Queue test-queue is available! Actual ticket: K80. Tickets left: 10."
+		expectedMessage := "🔔 Kolejka **test-queue** jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: **K80**\n🧾 Pozostało biletów: **10**"
 
 		if message != expectedMessage {
 			http.Error(w, fmt.Sprintf("Expected message to be \n'%s' but got \n'%s'", expectedMessage, message), http.StatusInternalServerError)
@@ -92,7 +93,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenUnavailableMessage_SendsNotificati
 		}
 
 		message := r.FormValue("message")
-		expectedMessage := "Queue test-queue is unavailable."
+		expectedMessage := "💤 Kolejka **test-queue** jest obecnie niedostępna."
 
 		if message != expectedMessage {
 			http.Error(w, fmt.Sprintf("Expected message to be \n'%s' but got \n'%s'", expectedMessage, message), http.StatusInternalServerError)
