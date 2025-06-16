@@ -23,6 +23,7 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 	}{
 		{"Test with available queue", true, "test-queue", "K80", 10, "Queue test-queue is available! Actual ticket: K80. Tickets left: 10."},
 		{"Test with unavailable queue", false, "test-queue", "K80", 10, "Queue test-queue is unavailable."},
+		{"Test with available queue without actual ticket", true, "test-queue", "", 5, "Queue test-queue is available! Tickets left: 5."},
 	}
 
 	for _, tc := range testConditions {
