@@ -1,6 +1,4 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
+### Go files ###
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -27,3 +25,19 @@ go.work.sum
 
 # .DS_Store files
 .DS_Store
+
+### Terraform files ###
+# .tfstate files
+*.tfstate
+*.tfstate.backup
+
+# tfplan files
+*.tfplan
+
+# Local tereraform directories and files
+.terraform
+.terraform*
+
+### Misc ###
+# Logs
+*.log
