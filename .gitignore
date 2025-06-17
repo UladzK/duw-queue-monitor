@@ -37,3 +37,7 @@ go.work.sum
 # Local tereraform directories and files
 .terraform
 .terraform*
+
+### Misc ###
+# Logs
+*.log
