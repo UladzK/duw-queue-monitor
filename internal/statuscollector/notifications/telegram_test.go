@@ -21,9 +21,9 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 		numberOfTicketsLeft int
 		expectedMessage     string
 	}{
-		{"Test with available queue", true, "test-queue", "K80", 10, "🔔 Kolejka **test-queue** jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: **K80**\n🧾 Pozostało biletów: **10**"},
-		{"Test with unavailable queue", false, "test-queue", "K80", 10, "💤 Kolejka **test-queue** jest obecnie niedostępna."},
-		{"Test with available queue without actual ticket", true, "Odbiór karty", "", 5, "🔔 Kolejka **Odbiór karty** jest teraz dostępna!\n🧾 Pozostało biletów: **5**"},
+		{"Test with available queue", true, "test-queue", "K80", 10, "🔔 Kolejka <b>test-queue</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>K80</b>\n🧾 Pozostało biletów: <b>10</b>"},
+		{"Test with unavailable queue", false, "test-queue", "K80", 10, "💤 Kolejka <b>test-queue</b> jest obecnie niedostępna."},
+		{"Test with available queue without actual ticket", true, "Odbiór karty", "", 5, "🔔 Kolejka <b>Odbiór karty</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>5</b>"},
 	}
 
 	for _, tc := range testConditions {
@@ -55,6 +55,10 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 				if message.ChatID != expectedChatID {
 					http.Error(w, fmt.Sprintf("Expected chat_id to be '%s' but got '%s'", expectedChatID, message.ChatID), http.StatusInternalServerError)
 					return
+				}
+
+				if message.ParseMode != "HTML" {
+					http.Error(w, fmt.Sprintf("Expected parse_mode to be 'HTML' but got '%s'", message.ParseMode), http.StatusInternalServerError)
 				}
 
 				if message.Text != tc.expectedMessage {

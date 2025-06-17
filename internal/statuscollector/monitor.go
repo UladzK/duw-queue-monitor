@@ -68,7 +68,7 @@ func (h *QueueMonitor) CheckAndProcessStatus() error {
 	}
 
 	h.updateState(newState)
-	h.log.Debug("Queue status updated:", "newState", newState)
+	h.log.Debug("Latest state:", "latestState", h.state)
 
 	return nil
 }
@@ -77,7 +77,7 @@ func (h *QueueMonitor) stateChanged(newState *Queue) bool {
 	// Notify if status changed, or tickets left changed (when enabled)
 	if h.statusChanged(newState) || (newState.Enabled && h.state.TicketsLeft != newState.TicketsLeft) {
 
-		h.log.Debug("Sending notification. Conditions met for notification.", "is initialized", h.isStateInitialized, "status changed", h.statusChanged(newState),
+		h.log.Debug("Sending notification. Conditions met for notification.", "is not initialized", !h.isStateInitialized, "status changed", h.statusChanged(newState),
 			"tickets left changed", h.state.TicketsLeft != newState.TicketsLeft)
 		h.log.Debug("Current state and new state", "currentState", h.state, "newState", newState)
 
@@ -105,4 +105,5 @@ func (h *QueueMonitor) updateState(newQueueStatus *Queue) {
 	h.state.LastTicketProcessed = newQueueStatus.TicketValue
 	h.state.QueueEnabled = newQueueStatus.Enabled
 	h.state.QueueActive = newQueueStatus.Active
+	h.state.TicketsLeft = newQueueStatus.TicketsLeft
 }
