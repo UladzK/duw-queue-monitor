@@ -105,4 +105,5 @@ func (h *QueueMonitor) updateState(newQueueStatus *Queue) {
 	h.state.LastTicketProcessed = newQueueStatus.TicketValue
 	h.state.QueueEnabled = newQueueStatus.Enabled
 	h.state.QueueActive = newQueueStatus.Active
+	h.state.TicketsLeft = newQueueStatus.TicketsLeft
 }

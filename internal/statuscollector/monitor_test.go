@@ -92,6 +92,12 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 			notifier := &mockNotifier{}
 
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
+			expectedFinalState := &MonitorState{
+				QueueActive:         tc.newState.Active,
+				QueueEnabled:        tc.newState.Enabled,
+				LastTicketProcessed: tc.newState.TicketValue,
+				TicketsLeft:         tc.newState.TicketsLeft,
+			}
 
 			// Act
 			err := sut.CheckAndProcessStatus()
@@ -107,6 +113,10 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 
 			if diff := cmp.Diff(notifier.lastSentStatus, tc.expectedNotification); diff != "" {
 				t.Errorf("Notification mismatch (-want +got):\n%s", diff)
+			}
+
+			if stateDiff := cmp.Diff(sut.GetState(), expectedFinalState); stateDiff != "" {
+				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", stateDiff)
 			}
 		})
 	}
@@ -203,13 +213,18 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			}
 
 			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
-			logger := logger.NewLogger(&logger.Config{
-				Level: "error"})
+			logger := logger.NewLogger(&logger.Config{Level: "error"})
 
 			notifier := &mockNotifier{}
 
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
 			sut.Init(&tc.initialState)
+			expectedFinalState := &MonitorState{
+				QueueActive:         tc.newState.Active,
+				QueueEnabled:        tc.newState.Enabled,
+				TicketsLeft:         tc.newState.TicketsLeft,
+				LastTicketProcessed: tc.newState.TicketValue,
+			}
 
 			// Act
 			err := sut.CheckAndProcessStatus()
@@ -225,6 +240,10 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 
 			if diff := cmp.Diff(notifier.lastSentStatus, tc.expectedNotification); diff != "" {
 				t.Errorf("Notification mismatch (-want +got):\n%s", diff)
+			}
+
+			if diffState := cmp.Diff(sut.GetState(), expectedFinalState); diffState != "" {
+				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", diffState)
 			}
 		})
 	}
