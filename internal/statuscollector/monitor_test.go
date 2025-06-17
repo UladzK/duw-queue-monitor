@@ -142,12 +142,12 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			nil,
 		},
 		{
-			"Condition 2: \"queue was active, state was initialized, queue becomes not active.\" Expected: \"notification should be sent.\"",
+			"Condition 2: \"queue was active and disabled, state was initialized, queue becomes not active.\" Expected: \"notification should NOT be sent.\"",
 			true,
-			MonitorState{QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
-			Queue{Name: queueName, Active: false, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
-			true,
-			&Queue{Name: queueName, Active: false, Enabled: true, TicketValue: "K123", TicketsLeft: 10},
+			MonitorState{QueueActive: true, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: "K123"},
+			Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "K123", TicketsLeft: 0},
+			false,
+			nil,
 		},
 		{
 			"Condition 3: \"queue was active, state was initialized, queue remains active, status becomes not enabled.\" Expected: \"notification should be sent.\"",
