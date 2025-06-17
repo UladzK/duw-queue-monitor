@@ -35,7 +35,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenAvailableMessage_SendsNotification
 		}
 
 		message := r.FormValue("message")
-		expectedMessage := "🔔 Kolejka **test-queue** jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: **K80**\n🧾 Pozostało biletów: **10**"
+		expectedMessage := "🔔 Kolejka <b>test-queue</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>K80</b>\n🧾 Pozostało biletów: <b>10</b>"
 
 		if message != expectedMessage {
 			http.Error(w, fmt.Sprintf("Expected message to be \n'%s' but got \n'%s'", expectedMessage, message), http.StatusInternalServerError)
@@ -93,7 +93,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenUnavailableMessage_SendsNotificati
 		}
 
 		message := r.FormValue("message")
-		expectedMessage := "💤 Kolejka **test-queue** jest obecnie niedostępna."
+		expectedMessage := "💤 Kolejka <b>test-queue</b> jest obecnie niedostępna."
 
 		if message != expectedMessage {
 			http.Error(w, fmt.Sprintf("Expected message to be \n'%s' but got \n'%s'", expectedMessage, message), http.StatusInternalServerError)

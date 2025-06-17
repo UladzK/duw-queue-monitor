@@ -24,8 +24,9 @@ func NewTelegramNotifier(cfg *TelegramConfig, log *logger.Logger, httpClient *ht
 }
 
 type SendMessageChannelRequest struct {
-	ChatID string `json:"chat_id"`
-	Text   string `json:"text"`
+	ChatID    string `json:"chat_id"`
+	Text      string `json:"text"`
+	ParseMode string `json:"parse_mode"` // needed to correctly format the message in Telegram
 }
 
 func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
@@ -34,8 +35,9 @@ func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName st
 	botApiFullUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.BaseApiUrl, s.cfg.BotToken)
 
 	reqBody := SendMessageChannelRequest{
-		ChatID: channelName,
-		Text:   buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft),
+		ChatID:    channelName,
+		Text:      buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft),
+		ParseMode: parseMode,
 	}
 	b, err := json.Marshal(reqBody)
 	if err != nil {
