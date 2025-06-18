@@ -1,6 +1,10 @@
 locals {
   service_name = "statuscollector"
   location     = "Poland Central"
+  telegram_env_vars = {
+    "NOTIFICATION_TELEGRAM_BOT_TOKEN"              = var.notification_telegram_bot_token
+    "NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME" = var.notification_telegram_broadcast_channel_name
+  }
 }
 
 resource "azurerm_resource_group" "rg" {
@@ -59,8 +63,7 @@ resource "azurerm_container_group" "aci" {
       protocol = "TCP"
     }
 
-    # environment_variables        = var.environment_variables
-    secure_environment_variables = var.environment_variables
+    secure_environment_variables = merge(local.telegram_env_vars, var.environment_variables)
   }
 
   tags = {

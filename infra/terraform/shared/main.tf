@@ -32,6 +32,7 @@ resource "azurerm_resource_group" "rg_tfstate" {
   location = local.location
 }
 
+// todo: configure encryption at rest for the storage account
 resource "azurerm_storage_account" "sa_tfstate" {
   name                     = "saduwtfstateshared"
   resource_group_name      = azurerm_resource_group.rg_tfstate.name
@@ -46,6 +47,7 @@ resource "azurerm_storage_account" "sa_tfstate" {
       days = 30
     }
   }
+
 }
 
 resource "azurerm_storage_container" "sc_tfstate" {

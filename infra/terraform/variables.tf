@@ -23,3 +23,13 @@ variable "deploy_aci" {
   type        = bool
   description = "Flag to deploy Azure Container Instance (ACI)"
 }
+
+variable "notification_telegram_broadcast_channel_name" {
+  type        = string
+  description = "Notification broadcast telegram channel name"
+}
+
+variable "notification_telegram_bot_token" {
+  type        = string
+  description = "Telegram bot token"
+}

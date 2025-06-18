@@ -1,3 +1,4 @@
+#### Development files ####
 ### Go files ###
 # Binaries for programs and plugins
 *.exe
@@ -26,6 +27,7 @@ go.work.sum
 # .DS_Store files
 .DS_Store
 
+#### Infra files ####
 ### Terraform files ###
 # .tfstate files
 *.tfstate
@@ -38,6 +40,10 @@ go.work.sum
 .terraform
 .terraform*
 
-### Misc ###
+
+### Infisical files ###
+.infisical*
+
+#### Misc ####
 # Logs
 *.log
