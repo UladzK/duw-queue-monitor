@@ -8,4 +8,4 @@ environment_variables = {
     "STATE_REDIS_CONNECTION_STRING"="redis://localhost:6379/0"
     "STATUS_CHECK_INTERVAL_SECONDS"="300"
 }
-deploy_aci = false
+deploy_aci = true
