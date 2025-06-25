@@ -1,6 +1,6 @@
 locals {
   service_image_name = "queue-monitor"
-  service_name       = trim(local.service_image_name, "-")
+  service_name       = replace(local.service_image_name, "-", "")
   location           = "Poland Central"
 
   acr_identity_id  = data.terraform_remote_state.shared.outputs.acr_app_pull_identity_id
@@ -11,7 +11,8 @@ locals {
     "NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME" = var.notification_telegram_broadcast_channel_name
   }
 }
-resource "azurerm_resource_group" "rg" {
+
+resource "azurerm_resource_group" "rg_aci" {
   name     = "rg-${local.service_name}-${var.environment}"
   location = local.location
 }
@@ -20,8 +21,8 @@ resource "azurerm_container_group" "aci" {
   count = var.deploy_aci ? 1 : 0
 
   name                = local.service_name
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg_aci.location
+  resource_group_name = azurerm_resource_group.rg_aci.name
   os_type             = "Linux"
   ip_address_type     = "Public"
   restart_policy      = "OnFailure"
