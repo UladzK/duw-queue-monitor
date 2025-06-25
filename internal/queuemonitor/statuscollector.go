@@ -1,4 +1,4 @@
-package statuscollector
+package queuemonitor
 
 import (
 	"encoding/json"
