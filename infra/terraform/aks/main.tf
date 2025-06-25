@@ -1,6 +1,7 @@
 locals {
-  service_name = "queuemonitor"
-  location     = "Poland Central"
+  service_image_name = "queue-monitor"
+  service_name       = trim(local.service_image_name, "-")
+  location           = "Poland Central"
 
   acr_identity_id  = data.terraform_remote_state.shared.outputs.acr_app_pull_identity_id
   acr_login_server = data.terraform_remote_state.shared.outputs.acr_login_server
@@ -10,7 +11,6 @@ locals {
     "NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME" = var.notification_telegram_broadcast_channel_name
   }
 }
-
 resource "azurerm_resource_group" "rg" {
   name     = "rg-${local.service_name}-${var.environment}"
   location = local.location
@@ -38,7 +38,7 @@ resource "azurerm_container_group" "aci" {
 
   container {
     name   = "aci-${local.service_name}-${var.environment}"
-    image  = "${local.acr_login_server}/${local.service_name}:${var.queue_monitor_image_tag}"
+    image  = "${local.acr_login_server}/${local.service_image_name}:${var.queue_monitor_image_tag}"
     cpu    = "0.5"
     memory = "0.5"
 
