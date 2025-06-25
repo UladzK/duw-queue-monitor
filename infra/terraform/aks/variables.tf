@@ -3,9 +3,9 @@ variable "subscription_id" {
   description = "Azure Subscription ID"
 }
 
-variable "status_collector_image_tag" {
+variable "queue_monitor_image_tag" {
   type        = string
-  description = "Status collector version tag: e.g. 1.0"
+  description = "Queue monitor version tag: e.g. 1.0"
 }
 
 variable "environment" {

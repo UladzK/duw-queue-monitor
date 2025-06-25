@@ -1,5 +1,5 @@
 locals {
-  service_name = "statuscollector"
+  service_name = "queuemonitor"
   location     = "Poland Central"
 
   acr_identity_id  = data.terraform_remote_state.shared.outputs.acr_app_pull_identity_id
@@ -38,7 +38,7 @@ resource "azurerm_container_group" "aci" {
 
   container {
     name   = "aci-${local.service_name}-${var.environment}"
-    image  = "${local.acr_login_server}/queue-monitor:${var.status_collector_image_tag}"
+    image  = "${local.acr_login_server}/${local.service_name}:${var.queue_monitor_image_tag}"
     cpu    = "0.5"
     memory = "0.5"
 

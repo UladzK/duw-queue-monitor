@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 	"uladzk/duw_kolejka_checker/internal/logger"
-	"uladzk/duw_kolejka_checker/internal/statuscollector"
-	"uladzk/duw_kolejka_checker/internal/statuscollector/notifications"
+	"uladzk/duw_kolejka_checker/internal/queuemonitor"
+	"uladzk/duw_kolejka_checker/internal/queuemonitor/notifications"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/redis/go-redis/v9"
@@ -33,7 +33,7 @@ func main() {
 		panic("failed to initialize runner: " + err.Error())
 	}
 
-	log.Info("Status collector started")
+	log.Info("Queue monitor started")
 	go runner.Run(ctx, done)
 
 	<-sigChan
@@ -41,7 +41,7 @@ func main() {
 	cancel()
 	<-done
 
-	log.Info("Status collector stopped")
+	log.Info("Queue monitor stopped")
 }
 
 func buildLogger() (*logger.Logger, error) {
@@ -53,8 +53,8 @@ func buildLogger() (*logger.Logger, error) {
 	return logger.NewLogger(&cfg), nil
 }
 
-func buildRunner(log *logger.Logger) (*statuscollector.Runner, error) {
-	var cfg statuscollector.Config
+func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
+	var cfg queuemonitor.Config
 	// TODO: implement Load() method in Configs
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err
@@ -73,16 +73,16 @@ func buildRunner(log *logger.Logger) (*statuscollector.Runner, error) {
 	}
 	redisClient := redis.NewClient(opt)
 
-	stateRepo := statuscollector.NewMonitorStateRepository(redisClient, cfg.QueueMonitor.StateTtlSeconds)
-	collector := statuscollector.NewStatusCollector(&cfg.QueueMonitor, httpClient)
+	stateRepo := queuemonitor.NewMonitorStateRepository(redisClient, cfg.QueueMonitor.StateTtlSeconds)
+	collector := queuemonitor.NewStatusCollector(&cfg.QueueMonitor, httpClient)
 	notifier := buildNotifier(&cfg, log, httpClient)
-	monitor := statuscollector.NewQueueMonitor(&cfg, log, collector, notifier)
+	monitor := queuemonitor.NewQueueMonitor(&cfg, log, collector, notifier)
 
-	runner := statuscollector.NewRunner(&cfg, log, monitor, stateRepo)
+	runner := queuemonitor.NewRunner(&cfg, log, monitor, stateRepo)
 	return runner, nil
 }
 
-func buildNotifier(cfg *statuscollector.Config, log *logger.Logger, httpClient *http.Client) notifications.Notifier {
+func buildNotifier(cfg *queuemonitor.Config, log *logger.Logger, httpClient *http.Client) notifications.Notifier {
 	if cfg.UseTelegramNotifications {
 		return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
 	}

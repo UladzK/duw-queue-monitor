@@ -1,9 +1,9 @@
-package statuscollector
+package queuemonitor
 
 import (
 	"fmt"
 	"uladzk/duw_kolejka_checker/internal/logger"
-	"uladzk/duw_kolejka_checker/internal/statuscollector/notifications"
+	"uladzk/duw_kolejka_checker/internal/queuemonitor/notifications"
 )
 
 // QueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.

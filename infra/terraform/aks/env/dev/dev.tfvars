@@ -1,5 +1,5 @@
 subscription_id = "77a70a5e-2230-43b7-8983-61e7497498a8"
-status_collector_image_tag = "0.4.1"
+queue_monitor_image_tag= "0.4.1"
 environment = "dev"
 // todo: get sensitive values from a secret vault
 environment_variables = {
