@@ -33,3 +33,19 @@ variable "notification_telegram_bot_token" {
   type        = string
   description = "Telegram bot token"
 }
+
+variable "deploy_aks" {
+  type        = bool
+  description = "Flag to deploy Azure Kubernetes Service (AKS)"
+  default     = true
+}
+
+variable "aks_config" {
+  type = object({
+    kubernetes_version : string
+    default_node_count : number
+    default_vm_size : string
+    default_os_disk_size_gb : number
+  })
+  description = "Configuration for AKS cluster"
+}

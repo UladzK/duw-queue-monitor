@@ -9,3 +9,10 @@ environment_variables = {
     "STATUS_CHECK_INTERVAL_SECONDS"="300"
 }
 deploy_aci = false
+
+aks_config = {
+    kubernetes_version = "1.33.0"
+    default_node_count         = 1
+    default_vm_size            = "Standard_B2s"
+    default_os_disk_size_gb    = 30
+}

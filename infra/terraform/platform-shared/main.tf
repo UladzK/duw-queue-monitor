@@ -6,6 +6,7 @@ resource "azurerm_resource_group" "rg_platform_shared" {
   name     = "rg-platform-shared"
   location = local.location
 }
+
 resource "azurerm_container_registry" "acr" {
   name                = "acrduwshared"
   resource_group_name = azurerm_resource_group.rg_platform_shared.name
@@ -13,11 +14,13 @@ resource "azurerm_container_registry" "acr" {
   sku                 = "Basic"
 }
 
+// TODO: clean up, not needed
 resource "azurerm_user_assigned_identity" "app" {
   name                = "uami-acr-app-pull-shared"
   resource_group_name = azurerm_resource_group.rg_platform_shared.name
   location            = azurerm_resource_group.rg_platform_shared.location
 }
+
 resource "azurerm_role_assignment" "app_pull" {
   scope                = azurerm_container_registry.acr.id
   role_definition_name = "AcrPull"

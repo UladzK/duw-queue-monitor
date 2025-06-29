@@ -2,6 +2,7 @@ locals {
   service_image_name = "queue-monitor"
   service_name       = replace(local.service_image_name, "-", "")
   location           = "Poland Central"
+  location_short     = "plc"
 
   acr_identity_id  = data.terraform_remote_state.shared.outputs.acr_app_pull_identity_id
   acr_login_server = data.terraform_remote_state.shared.outputs.acr_login_server
@@ -11,6 +12,47 @@ locals {
     "NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME" = var.notification_telegram_broadcast_channel_name
   }
 }
+
+resource "azurerm_resource_group" "rg_aks" {
+  name     = "rg-aks-${var.environment}"
+  location = local.location
+}
+
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = "aks-duw-${var.environment}-${local.location_short}"
+  location            = azurerm_resource_group.rg_aks.location
+  resource_group_name = azurerm_resource_group.rg_aks.name
+  kubernetes_version  = var.aks_config.kubernetes_version
+  sku_tier            = "Free"
+
+  private_cluster_enabled = true
+
+  dns_prefix = "aksduw-${var.environment}"
+
+  default_node_pool {
+    name            = "default"
+    node_count      = var.aks_config.default_node_count
+    vm_size         = var.aks_config.default_vm_size
+    os_disk_size_gb = var.aks_config.default_os_disk_size_gb
+    os_disk_type    = "Ephemeral"
+    os_sku          = "Ubuntu"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    environment = var.environment
+  }
+}
+
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  scope                = data.terraform_remote_state.shared.outputs.acr_id
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  role_definition_name = "AcrPull"
+}
+
 
 resource "azurerm_resource_group" "rg_aci" {
   name     = "rg-${local.service_name}-${var.environment}"
