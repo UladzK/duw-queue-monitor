@@ -1,6 +1,8 @@
 locals {
-  service_name = "queuemonitor"
-  location     = "Poland Central"
+  service_image_name = "queue-monitor"
+  service_name       = replace(local.service_image_name, "-", "")
+  location           = "Poland Central"
+  location_short     = "plc"
 
   acr_identity_id  = data.terraform_remote_state.shared.outputs.acr_app_pull_identity_id
   acr_login_server = data.terraform_remote_state.shared.outputs.acr_login_server
@@ -11,7 +13,48 @@ locals {
   }
 }
 
-resource "azurerm_resource_group" "rg" {
+resource "azurerm_resource_group" "rg_aks" {
+  name     = "rg-aks-${var.environment}"
+  location = local.location
+}
+
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = "aks-duw-${var.environment}-${local.location_short}"
+  location            = azurerm_resource_group.rg_aks.location
+  resource_group_name = azurerm_resource_group.rg_aks.name
+  kubernetes_version  = var.aks_config.kubernetes_version
+  sku_tier            = "Free"
+
+  private_cluster_enabled = true
+
+  dns_prefix = "aksduw-${var.environment}"
+
+  default_node_pool {
+    name            = "default"
+    node_count      = var.aks_config.default_node_count
+    vm_size         = var.aks_config.default_vm_size
+    os_disk_size_gb = var.aks_config.default_os_disk_size_gb
+    os_disk_type    = "Ephemeral"
+    os_sku          = "Ubuntu"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    environment = var.environment
+  }
+}
+
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  scope                = data.terraform_remote_state.shared.outputs.acr_id
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  role_definition_name = "AcrPull"
+}
+
+
+resource "azurerm_resource_group" "rg_aci" {
   name     = "rg-${local.service_name}-${var.environment}"
   location = local.location
 }
@@ -20,8 +63,8 @@ resource "azurerm_container_group" "aci" {
   count = var.deploy_aci ? 1 : 0
 
   name                = local.service_name
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg_aci.location
+  resource_group_name = azurerm_resource_group.rg_aci.name
   os_type             = "Linux"
   ip_address_type     = "Public"
   restart_policy      = "OnFailure"
@@ -38,7 +81,7 @@ resource "azurerm_container_group" "aci" {
 
   container {
     name   = "aci-${local.service_name}-${var.environment}"
-    image  = "${local.acr_login_server}/${local.service_name}:${var.queue_monitor_image_tag}"
+    image  = "${local.acr_login_server}/${local.service_image_name}:${var.queue_monitor_image_tag}"
     cpu    = "0.5"
     memory = "0.5"
 
