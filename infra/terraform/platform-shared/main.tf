@@ -27,6 +27,11 @@ resource "azurerm_role_assignment" "app_pull" {
   principal_id         = azurerm_user_assigned_identity.app.principal_id
 }
 
+resource "azuread_group" "aks_admins_group" {
+  display_name     = "ug-aks-admins"
+  security_enabled = true
+}
+
 resource "azurerm_resource_group" "rg_tfstate" {
   name     = "rg-tfstate-shared"
   location = local.location
