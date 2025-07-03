@@ -25,7 +25,17 @@ resource "azurerm_kubernetes_cluster" "aks" {
   kubernetes_version  = var.aks_config.kubernetes_version
   sku_tier            = "Free"
 
-  private_cluster_enabled = true
+  private_cluster_enabled = false
+  api_server_access_profile {
+    authorized_ip_ranges = [] # allow access from all IPs
+  }
+  role_based_access_control_enabled = true
+  local_account_disabled            = true
+  azure_active_directory_role_based_access_control {
+    azure_rbac_enabled     = true
+    tenant_id              = data.azurerm_subscription.current.tenant_id
+    admin_group_object_ids = [data.terraform_remote_state.shared.outputs.ug_aks_admins_object_id]
+  }
 
   dns_prefix = "aksduw-${var.environment}"
 
@@ -36,6 +46,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
     os_disk_size_gb = var.aks_config.default_os_disk_size_gb
     os_disk_type    = "Ephemeral"
     os_sku          = "Ubuntu"
+
+    upgrade_settings {
+      max_surge                     = "100%"
+      drain_timeout_in_minutes      = 5
+      node_soak_duration_in_minutes = 1
+    }
   }
 
   identity {
