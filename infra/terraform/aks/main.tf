@@ -69,6 +69,17 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   role_definition_name = "AcrPull"
 }
 
+resource "kubernetes_secret" "infisical_universal_identity" {
+  metadata {
+    name = "infisical-universal-auth-credentials"
+  }
+  type = "Opaque"
+
+  data = {
+    INFISICAL_CLIENT_ID     = var.aks_eso_infisical_client_id
+    INFISICAL_CLIENT_SECRET = var.aks_eso_infisical_client_secret
+  }
+}
 
 resource "azurerm_resource_group" "rg_aci" {
   name     = "rg-${local.service_name}-${var.environment}"
