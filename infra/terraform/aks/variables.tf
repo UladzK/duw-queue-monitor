@@ -61,3 +61,8 @@ variable "aks_eso_infisical_client_secret" {
   description = "Infisical identity client secret for accessing secrets in AKS"
   sensitive   = true
 }
+
+variable "infisical_project_slug" {
+  type        = string
+  description = "Infisical project slug for secret management"
+}

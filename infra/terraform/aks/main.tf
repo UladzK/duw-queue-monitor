@@ -3,6 +3,7 @@ locals {
   service_name       = replace(local.service_image_name, "-", "")
   location           = "Poland Central"
   location_short     = "plc"
+  infisical_region   = "eu"
 
   acr_identity_id  = data.terraform_remote_state.shared.outputs.acr_app_pull_identity_id
   acr_login_server = data.terraform_remote_state.shared.outputs.acr_login_server
@@ -26,6 +27,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   sku_tier            = "Free"
 
   private_cluster_enabled = false
+  # TODO: for some reason the aks cluster is changed with empty api_server_access_profile
+  # see issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/20085
   api_server_access_profile {
     authorized_ip_ranges = [] # allow access from all IPs
   }
@@ -76,52 +79,63 @@ resource "kubernetes_secret" "infisical_universal_identity" {
   type = "Opaque"
 
   data = {
-    INFISICAL_CLIENT_ID     = var.aks_eso_infisical_client_id
-    INFISICAL_CLIENT_SECRET = var.aks_eso_infisical_client_secret
+    clientId     = var.aks_eso_infisical_client_id
+    clientSecret = var.aks_eso_infisical_client_secret
   }
 }
 
-resource "azurerm_resource_group" "rg_aci" {
-  name     = "rg-${local.service_name}-${var.environment}"
-  location = local.location
+resource "kubernetes_manifest" "eso_infisical_secret_store" {
+  manifest = yamldecode(templatefile("${path.module}/templates/eso-infisical-secret-store.yml", {
+    infisical_universal_auth_credentials_secret_name = kubernetes_secret.infisical_universal_identity.metadata[0].name
+    infisical_project_slug                           = var.infisical_project_slug
+    infisical_environment_slug                       = var.environment
+    infisical_region                                 = local.infisical_region
+  }))
+
+  depends_on = [kubernetes_secret.infisical_universal_identity]
 }
 
-resource "azurerm_container_group" "aci" {
-  count = var.deploy_aci ? 1 : 0
+# resource "azurerm_resource_group" "rg_aci" {
+#   name     = "rg-${local.service_name}-${var.environment}"
+#   location = local.location
+# }
 
-  name                = local.service_name
-  location            = azurerm_resource_group.rg_aci.location
-  resource_group_name = azurerm_resource_group.rg_aci.name
-  os_type             = "Linux"
-  ip_address_type     = "Public"
-  restart_policy      = "OnFailure"
+# resource "azurerm_container_group" "aci" {
+#   count = var.deploy_aci ? 1 : 0
 
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [local.acr_identity_id]
-  }
+#   name                = local.service_name
+#   location            = azurerm_resource_group.rg_aci.location
+#   resource_group_name = azurerm_resource_group.rg_aci.name
+#   os_type             = "Linux"
+#   ip_address_type     = "Public"
+#   restart_policy      = "OnFailure"
 
-  image_registry_credential {
-    server                    = local.acr_login_server
-    user_assigned_identity_id = local.acr_identity_id
-  }
+#   identity {
+#     type         = "UserAssigned"
+#     identity_ids = [local.acr_identity_id]
+#   }
 
-  container {
-    name   = "aci-${local.service_name}-${var.environment}"
-    image  = "${local.acr_login_server}/${local.service_image_name}:${var.queue_monitor_image_tag}"
-    cpu    = "0.5"
-    memory = "0.5"
+#   image_registry_credential {
+#     server                    = local.acr_login_server
+#     user_assigned_identity_id = local.acr_identity_id
+#   }
 
-    ports {
-      port     = 80
-      protocol = "TCP"
-    }
+#   container {
+#     name   = "aci-${local.service_name}-${var.environment}"
+#     image  = "${local.acr_login_server}/${local.service_image_name}:${var.queue_monitor_image_tag}"
+#     cpu    = "0.5"
+#     memory = "0.5"
 
-    secure_environment_variables = merge(local.telegram_env_vars, var.environment_variables)
-  }
+#     ports {
+#       port     = 80
+#       protocol = "TCP"
+#     }
 
-  tags = {
-    environment  = var.environment
-    service_name = local.service_name
-  }
-}
+#     secure_environment_variables = merge(local.telegram_env_vars, var.environment_variables)
+#   }
+
+#   tags = {
+#     environment  = var.environment
+#     service_name = local.service_name
+#   }
+# }

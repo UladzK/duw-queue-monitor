@@ -16,3 +16,5 @@ aks_config = {
     default_vm_size            = "Standard_B2s"
     default_os_disk_size_gb    = 30
 }
+
+infisical_project_slug = "duw-monitor-secrets-default"
