@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+data:
+  redis.conf: |
+    # Disable periodic RDB snapshots
+    save ""
+
+    # Disable the append-only file
+    appendonly no
+
+    # Explicitly allow all connections from within the cluster
+    protected-mode no
