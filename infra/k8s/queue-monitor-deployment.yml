@@ -25,9 +25,9 @@ spec:
         - name: USE_TELEGRAM_NOTIFICATIONS
           value: "true"
         - name: STATE_REDIS_CONNECTION_STRING
-          value: "redis://localhost:6379/0"
+          value: "redis://redis-service:6379/0"
         - name: STATUS_CHECK_INTERVAL_SECONDS
-          value: "300"
+          value: "30"
         - name: NOTIFICATION_TELEGRAM_BOT_TOKEN
           valueFrom:
             secretKeyRef:
@@ -43,5 +43,5 @@ spec:
             cpu: 100m
             memory: 128Mi
           limits:
-            cpu: 200m
-            memory: 256Mi
+            cpu: 100m
+            memory: 128Mi
