@@ -85,7 +85,7 @@ resource "kubernetes_secret" "infisical_universal_identity" {
 }
 
 resource "kubernetes_manifest" "eso_infisical_secret_store" {
-  manifest = yamldecode(templatefile("${path.module}/templates/eso-infisical-secret-store.yml", {
+  manifest = yamldecode(templatefile("${path.module}/k8s/eso-infisical-secret-store.yml", {
     infisical_universal_auth_credentials_secret_name = kubernetes_secret.infisical_universal_identity.metadata[0].name
     infisical_project_slug                           = var.infisical_project_slug
     infisical_environment_slug                       = var.environment
