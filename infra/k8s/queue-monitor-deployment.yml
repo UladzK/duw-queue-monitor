@@ -10,7 +10,7 @@ spec:
     matchLabels:
       app: queue-monitor
   strategy: 
-    type: Recreate # it ensures that monitors will not start sending the same status updates in parallel
+    type: Recreate # it ensures that monitors will not start sending the same status updates in parallel when the deployment is updated
   template:
     metadata:
       labels:
@@ -29,9 +29,15 @@ spec:
         - name: STATUS_CHECK_INTERVAL_SECONDS
           value: "300"
         - name: NOTIFICATION_TELEGRAM_BOT_TOKEN
-          value: "7442293468:AAGt4PGhShMtQPmKYJGlFV49W5EUEewLR7s"
+          valueFrom:
+            secretKeyRef:
+              name: queue-monitor-external-secret
+              key: NOTIFICATION_TELEGRAM_BOT_TOKEN
         - name: NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME
-          value: "K6Afqk8DkwD"
+          valueFrom:
+            secretKeyRef:
+              name: queue-monitor-external-secret
+              key: NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME
         resources:
           requests:
             cpu: 100m
