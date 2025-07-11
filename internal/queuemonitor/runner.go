@@ -36,7 +36,7 @@ func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 	for {
 		select {
 		case <-ctx.Done():
-			doShutDown(ctx, h, done)
+			doShutdown(ctx, h, done)
 			return
 		case <-ticker.C:
 			doCheck(h)
@@ -44,7 +44,7 @@ func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 	}
 }
 
-func doShutDown(ctx context.Context, h *Runner, done chan<- bool) {
+func doShutdown(ctx context.Context, h *Runner, done chan<- bool) {
 	h.log.Info("Received shutdown signal. Saving monitor state and stopping monitor loop")
 	h.saveMonitorState(ctx)
 
