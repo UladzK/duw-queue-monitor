@@ -25,28 +25,39 @@ func NewRunner(cfg *Config, log *logger.Logger, monitor *QueueMonitor, stateRepo
 }
 
 func (h *Runner) Run(ctx context.Context, done chan<- bool) {
-	h.log.Info("Initializing monitor state")
+	h.log.Info("Initializing monitor state...")
 	h.initMonitorState(ctx)
 
-	h.log.Info("Started monitor loop")
+	h.log.Info(fmt.Sprintf("Started monitor loop. Status check interval is set to %v seconds", h.cfg.StatusCheckInternalSeconds))
+	ticker := time.NewTicker(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)
+	defer ticker.Stop()
+
+	doCheck(h) // to avoid waiting for the first tick
 	for {
 		select {
 		case <-ctx.Done():
-			h.log.Info("Received shutdown signal. Saving monitor state and stopping monitor loop")
-			h.saveMonitorState(ctx)
-
-			h.log.Info("Stopped monitor loop")
-			done <- true
+			doShutdown(ctx, h, done)
 			return
-		default:
-			if err := h.monitor.CheckAndProcessStatus(); err != nil {
-				h.log.Error("Error during collecting status and pushing notifications", err)
-			}
-
-			h.log.Debug(fmt.Sprintf("Status collection is completed. Checking again in %v seconds", h.cfg.StatusCheckInternalSeconds))
-			time.Sleep(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second) // TODO: will be sleeping even after SIGTERM. ticket is the better option?
+		case <-ticker.C:
+			doCheck(h)
 		}
 	}
+}
+
+func doShutdown(ctx context.Context, h *Runner, done chan<- bool) {
+	h.log.Info("Received shutdown signal. Saving monitor state and stopping monitor loop")
+	h.saveMonitorState(ctx)
+
+	h.log.Info("Stopped monitor loop")
+	done <- true
+}
+
+func doCheck(h *Runner) {
+	if err := h.monitor.CheckAndProcessStatus(); err != nil {
+		h.log.Error("Error during collecting status and pushing notifications", err)
+	}
+
+	h.log.Debug(fmt.Sprintf("Status collection is completed. Checking again in %v seconds", h.cfg.StatusCheckInternalSeconds))
 }
 
 func (h *Runner) saveMonitorState(ctx context.Context) {
