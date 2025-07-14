@@ -62,7 +62,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./cmd/${{ steps.get_service_name_code.outputs.SERVICE_NAME_CODE }}/Dockerfile
+          file: ./cmd/${{ steps.get-service-name-code.outputs.SERVICE_NAME_CODE }}/Dockerfile
           push: true
           tags: |
             acrduwshared.azurecr.io/${{ inputs.service }}:${{ inputs.version }}
