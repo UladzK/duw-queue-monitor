@@ -41,22 +41,23 @@ jobs:
         run: |
           IMAGE_NAME="acrduwshared.azurecr.io/${{ inputs.service }}:${{ inputs.version }}"
           if docker pull $IMAGE_NAME; then
-            echo "Image $IMAGE_NAME already exists. Exiting."
+            echo "❌ Image $IMAGE_NAME already exists. Exiting."
             exit 1
           else
             echo "Image $IMAGE_NAME does not exist. Proceeding with build."
           fi
       - name: 'Get service name in Go code style'
+        id: get_service_name_code
         shell: bash
         run: |
-          SERVICE_NAME_CODE=$(echo "${{ inputs.service }}" | sed 's/-//g')
-          echo "SERVICE_NAME_CODE=$SERVICE_NAME_CODE" >> $GITHUB_ENV
+          SERVICE_NAME_TRANSFORMED=$(echo "${{ inputs.service }}" | sed 's/-//g')
+          echo "SERVICE_NAME_CODE=$SERVICE_NAME_TRANSFORMED" >> $GITHUB_OUTPUT
 
       - name: 'Build and push Docker image'
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./cmd/${{ github.env.SERVICE_NAME_CODE }}/Dockerfile
+          file: ./cmd/${{ steps.get_service_name_code.outputs.SERVICE_NAME_CODE }}/Dockerfile
           push: true
           tags: |
             acrduwshared.azurecr.io/${{ inputs.service }}:${{ inputs.version }}
