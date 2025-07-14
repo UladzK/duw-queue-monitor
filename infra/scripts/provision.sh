@@ -13,7 +13,7 @@ fi
 # --- Input Arguments ---
 MODULE="$1"
 ENV="$2"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 MODULE_DIR="$SCRIPT_DIR/../terraform/$MODULE"
 
 # --- Constants ---
