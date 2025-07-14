@@ -1,27 +1,29 @@
-# This workflow is triggered on pull requests to the main branch.
-# It checks out the code, sets up Go, builds the project, and runs tests.
-
 name: Pull request workflow
-
 on:
   pull_request:
     branches: [ "main" ]
+  push:
+    branches: [ "main" ]
 
 jobs:
-
   build:
     name: Build and Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - id: checkout
+      name: Checkout code 
+      uses: actions/checkout@v4
 
-    - name: Set up Go
+    - id: setup-go
+      name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.24.4'
 
-    - name: Build
+    - id: build
+      name: Build Go
       run: go build -v ./...
 
-    - name: Test
+    - id: test
+      name: Test Go
       run: go test -v ./...

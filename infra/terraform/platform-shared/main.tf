@@ -1,5 +1,7 @@
 locals {
-  location = "Poland Central"
+  location  = "Poland Central"
+  gh_repo   = "UladzK/duw-kolejka-checker"
+  gh_branch = "main" // main only for now
 }
 
 resource "azurerm_resource_group" "rg_platform_shared" {
@@ -30,6 +32,31 @@ resource "azurerm_role_assignment" "app_pull" {
 resource "azuread_group" "aks_admins_group" {
   display_name     = "ug-aks-admins"
   security_enabled = true
+}
+
+resource "azuread_application" "gha" {
+  display_name = "gha-publisher-${replace(local.gh_repo, "/", "-")}"
+}
+
+resource "azuread_service_principal" "gha_sp" {
+  client_id = azuread_application.gha.client_id
+}
+
+resource "azuread_application_federated_identity_credential" "gha_fic" {
+  application_id = azuread_application.gha.id
+  display_name   = "gha-publisher-${replace(local.gh_repo, "/", "-")}-${local.gh_branch}"
+
+  issuer    = "https://token.actions.githubusercontent.com"
+  subject   = "repo:${local.gh_repo}:ref:refs/heads/${local.gh_branch}"
+  audiences = ["api://AzureADTokenExchange"]
+
+  description = "GitHub Actions publisher for ${local.gh_repo} on branch ${local.gh_branch}"
+}
+
+resource "azurerm_role_assignment" "gha_sp_acr_push" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPush"
+  principal_id         = azuread_service_principal.gha_sp.object_id
 }
 
 resource "azurerm_resource_group" "rg_tfstate" {

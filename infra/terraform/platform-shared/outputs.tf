@@ -21,3 +21,10 @@ output "aks_admins_group_object_id" {
 
   description = "Azure AD group ID for AKS admins"
 }
+
+output "gha_client_id" {
+  value = azuread_application.gha.client_id
+
+  description = "Client ID for the GitHub Actions publisher workflow"
+  sensitive   = true
+}

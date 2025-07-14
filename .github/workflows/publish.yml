@@ -1,0 +1,80 @@
+name: Publish workflow
+description: |
+  This workflow is triggered manually to publish newest version of the application to ACR.
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        type: choice
+        options: [queue-monitor]
+        description: 'Name of the service to publish'
+        required: true
+      version:
+        description: 'Semantic version of the service to publish'
+        required: true
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        name: Checkout code
+        uses: actions/checkout@v4
+
+      - id: azure-login
+        name: 'Azure login'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.ACTION_PUBLISH_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - id: login-acr
+        name: 'Login to ACR using CLI to allow log in using service principal'
+        shell: bash
+        run: |
+          az acr login --name acrduwshared
+      
+      - id: verify-image
+        name: 'Verify image with version does not exist'
+        shell: bash
+        run: |
+          IMAGE_NAME="acrduwshared.azurecr.io/${{ inputs.service }}:${{ inputs.version }}"
+          if docker pull $IMAGE_NAME; then
+            echo "❌ Image $IMAGE_NAME already exists. Exiting."
+            exit 1
+          else
+            echo "Image $IMAGE_NAME does not exist. Proceeding with build."
+          fi
+      - id: get-service-name-code
+        name: 'Get service name in Go code style'
+        shell: bash
+        run: |
+          SERVICE_NAME_TRANSFORMED=$(echo "${{ inputs.service }}" | sed 's/-//g')
+          echo "SERVICE_NAME_CODE=$SERVICE_NAME_TRANSFORMED" >> $GITHUB_OUTPUT
+
+      - id: build-push-image
+        name: 'Build and push Docker image'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./cmd/${{ steps.get_service_name_code.outputs.SERVICE_NAME_CODE }}/Dockerfile
+          push: true
+          tags: |
+            acrduwshared.azurecr.io/${{ inputs.service }}:${{ inputs.version }}
+            acrduwshared.azurecr.io/${{ inputs.service }}:latest
+      - id: create-tag
+        name: Create tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ inputs.service }}-${{ inputs.version }}',
+              sha: context.sha
+            })
