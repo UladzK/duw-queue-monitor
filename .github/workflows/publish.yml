@@ -1,25 +1,73 @@
-name: Run Azure Login with OIDC
+name: Publish workflow
+description: |
+  This workflow is triggered manually to publish newest version of the application to ACR.
 on:
   workflow_dispatch:
+    inputs:
+      service:
+        type: choice
+        options: [queue-monitor]
+        description: 'Name of the service to publish'
+        required: true
+      version:
+        description: 'Semantic version of the service to publish'
+        required: true
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build-and-deploy:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - name: 'Az CLI login'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 'Azure login'
         uses: azure/login@v2
         with:
-          # TODO: these secrets can be provisioned in terraform or fetched from Infisical
+          # TODO: these secrets can be provisioned in terraform or fetched from Infisical for convenience
           client-id: ${{ secrets.ACTION_PUBLISH_AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: 'Run az commands'
+      - name: 'Login to ACR'
+        uses: azure/docker-login@v1
+        with:
+          login-server: 'acrduwshared.azurecr.io' #TODO: use env variable
+      
+      - name: 'Verify image with version does not exist'
+        shell: bash
         run: |
-          az account show
-          az group list
+          IMAGE_NAME="acrduwshared.azurecr.io/${{ inputs.service }}:${{ inputs.version }}"
+          if docker pull $IMAGE_NAME; then
+            echo "Image $IMAGE_NAME already exists. Exiting."
+            exit 1
+          else
+            echo "Image $IMAGE_NAME does not exist. Proceeding with build."
+          fi
+      - name: 'Get service name in Go code style'
+        shell: bash
+        run: |
+          SERVICE_NAME_CODE=$(echo "${{ inputs.service }}" | sed 's/-//g')
+          echo "SERVICE_NAME_CODE=$SERVICE_NAME_CODE" >> $GITHUB_ENV
 
+      - name: 'Build and push Docker image'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./cmd/${{ github.env.SERVICE_NAME_CODE }}/Dockerfile
+          push: true
+          tags: |
+            acrduwshared.azurecr.io/${{ inputs.service }}:${{ inputs.version }}
+            acrduwshared.azurecr.io/${{ inputs.service }}:latest
+      - name: Create tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ inputs.service }}-${{ inputs.version }}',
+              sha: context.sha
+            })
