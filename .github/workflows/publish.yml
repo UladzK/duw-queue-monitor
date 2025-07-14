@@ -31,10 +31,11 @@ jobs:
           client-id: ${{ secrets.ACTION_PUBLISH_AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: 'Login to ACR'
-        uses: azure/docker-login@v1
+      - name: 'Login to ACR using CLI to allow log in using service principal'
+        uses: azure/cli@v2
         with:
-          login-server: 'acrduwshared.azurecr.io' #TODO: use env variable
+          inlineScript: |
+            az acr login --name acrduwshared
       
       - name: 'Verify image with version does not exist'
         shell: bash
