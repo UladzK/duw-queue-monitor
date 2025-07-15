@@ -18,6 +18,7 @@ MODULE_DIR="$SCRIPT_DIR/../terraform/$MODULE"
 
 # --- Constants ---
 readonly AZURE_SUB="77a70a5e-2230-43b7-8983-61e7497498a8"
+readonly INFISICAL_PROJECT_ID="145e0d1a-6378-4338-a9eb-2d77178f96e7" # terraform secrets project ID
 
 # --- Script workflow ---
 
@@ -30,11 +31,8 @@ echo "🔧 Module dir: $MODULE_DIR"
 echo "🌍 Environment: $ENV"
 cd "$MODULE_DIR"
 
-# --- Check Infisical Login ---
-if ! infisical user switch; then
-  echo "Log in to infisical first using (infisical login) command"
-  exit 1
-fi
+# --- Infisical Login ---
+infisical login
 
 # --- Check Azure CLI Login ---
 if ! az account show; then
@@ -53,7 +51,7 @@ terraform init -backend-config="envs/$ENV/backend.hcl"
 echo "🛠️ Planning infrastructure changes..."
 PLAN_OUT="${ENV}.tfplan"
 
-infisical run --env="$ENV" -- terraform plan \
+infisical run --env="$ENV" --projectId=$INFISICAL_PROJECT_ID -- terraform plan \
   -var-file="envs/$ENV/$ENV.tfvars" \
   -out="$PLAN_OUT"
 
