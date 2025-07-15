@@ -1,0 +1,14 @@
+provider "azurerm" {
+  features {}
+  subscription_id = var.subscription_id
+}
+
+provider "kubernetes" {
+  config_path = "~/.kube/config" # TODO: temporary solution, should be replaced with proper AKS auth to enable CI/CD
+}
+
+provider "helm" {
+  kubernetes = {
+    config_path = "~/.kube/config" # TODO: temporary solution, should be replaced with proper AKS auth to enable CI/CD
+  }
+}
