@@ -1,12 +1,7 @@
 locals {
-  service_image_name = "queue-monitor"
-  service_name       = replace(local.service_image_name, "-", "")
-  location           = "Poland Central"
-  location_short     = "plc"
-  infisical_region   = "eu"
-
-  acr_identity_id  = data.terraform_remote_state.shared.outputs.acr_app_pull_identity_id
-  acr_login_server = data.terraform_remote_state.shared.outputs.acr_login_server
+  location         = "Poland Central"
+  location_short   = "plc"
+  infisical_region = "eu"
 }
 
 resource "azurerm_resource_group" "rg_aks" {
@@ -77,6 +72,8 @@ resource "kubernetes_secret" "infisical_universal_identity" {
     clientId     = var.aks_eso_infisical_client_id
     clientSecret = var.aks_eso_infisical_client_secret
   }
+
+  depends_on = [azurerm_kubernetes_cluster.aks]
 }
 
 resource "kubernetes_manifest" "eso_infisical_secret_store" {
@@ -87,5 +84,5 @@ resource "kubernetes_manifest" "eso_infisical_secret_store" {
     infisical_region                                 = local.infisical_region
   }))
 
-  depends_on = [kubernetes_secret.infisical_universal_identity]
+  depends_on = [azurerm_kubernetes_cluster.aks, kubernetes_secret.infisical_universal_identity]
 }
