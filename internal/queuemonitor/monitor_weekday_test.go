@@ -42,6 +42,7 @@ func (m *MockTimeProvider) Now() time.Time {
 }
 
 func TestCheckAndProcessStatus_Always_RunsCheckDependingOnCurrentDateTime(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		name     string
 		time     *MockTimeProvider
@@ -73,8 +74,8 @@ func TestCheckAndProcessStatus_Always_RunsCheckDependingOnCurrentDateTime(t *tes
 			expected: true,
 		},
 		{
-			name:     "Monday 19:30 in Poland",
-			time:     NewMockTimeProvider("2025-04-07T19:30:00+02:00"),
+			name:     "Monday 20:30 in Poland",
+			time:     NewMockTimeProvider("2025-04-07T20:30:00+02:00"),
 			expected: false,
 		},
 	}
@@ -85,8 +86,10 @@ func TestCheckAndProcessStatus_Always_RunsCheckDependingOnCurrentDateTime(t *tes
 			logger := logger.NewLogger(&logger.Config{Level: "error"})
 			wm := NewWeekdayQueueMonitor(mm, tt.time, logger)
 
+			// Act
 			_ = wm.CheckAndProcessStatus()
 
+			// Assert
 			if mm.statusCheckCalled != tt.expected {
 				t.Errorf("Status check called: expected %v, got %v", tt.expected, mm.statusCheckCalled)
 			}
