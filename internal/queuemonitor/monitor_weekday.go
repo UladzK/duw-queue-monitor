@@ -14,6 +14,11 @@ type WeekdayQueueMonitor struct {
 	log            *logger.Logger
 }
 
+const (
+	workingHourStart = 6  // 06:00 UTC
+	workingHourEnd   = 18 // 18:00 UTC
+)
+
 type DateTimeProvider interface {
 	Now() time.Time
 }
