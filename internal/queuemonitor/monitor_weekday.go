@@ -50,7 +50,7 @@ func (w *WeekdayQueueMonitor) isDuwOffTime() bool {
 		return true
 	}
 
-	if now.Hour() < 6 || now.Hour() >= 17 {
+	if now.Hour() < workingHourStart || now.Hour() >= workingHourEnd {
 		return true
 	}
 
