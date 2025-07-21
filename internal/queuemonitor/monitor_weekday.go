@@ -5,30 +5,33 @@ import (
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
+// WeekdayQueueMonitor is a wrapper around the DefaultQueueMonitor that disables queue monitoring on weekends and during off hours (06:00 - 18:00 UTC).
+// It uses a DateTimeProvider to get the current time, allowing for easier testing and mocking
+// Note: I don't like this idea, but DUW API returns queue active and available during weekends, so this is the easiest way to avoid unnecessary notifications to users.
 type WeekdayQueueMonitor struct {
-	decoratedMonitor QueueMonitorInterface
-	timeProvider     TimeProvider
-	log              *logger.Logger
+	defaultMonitor QueueMonitor
+	timeProvider   DateTimeProvider
+	log            *logger.Logger
 }
 
-type TimeProvider interface {
+type DateTimeProvider interface {
 	Now() time.Time
 }
 
-func NewWeekdayQueueMonitor(decoratedMonitor QueueMonitorInterface, timeProvider TimeProvider, log *logger.Logger) *WeekdayQueueMonitor {
+func NewWeekdayQueueMonitor(defaultMonitor QueueMonitor, timeProvider DateTimeProvider, log *logger.Logger) *WeekdayQueueMonitor {
 	return &WeekdayQueueMonitor{
-		decoratedMonitor: decoratedMonitor,
-		log:              log,
-		timeProvider:     timeProvider,
+		defaultMonitor: defaultMonitor,
+		log:            log,
+		timeProvider:   timeProvider,
 	}
 }
 
 func (w *WeekdayQueueMonitor) Init(initState *MonitorState) {
-	w.decoratedMonitor.Init(initState)
+	w.defaultMonitor.Init(initState)
 }
 
 func (w *WeekdayQueueMonitor) GetState() *MonitorState {
-	return w.decoratedMonitor.GetState()
+	return w.defaultMonitor.GetState()
 }
 
 func (w *WeekdayQueueMonitor) CheckAndProcessStatus() error {
@@ -37,7 +40,7 @@ func (w *WeekdayQueueMonitor) CheckAndProcessStatus() error {
 		return nil
 	}
 
-	return w.decoratedMonitor.CheckAndProcessStatus()
+	return w.defaultMonitor.CheckAndProcessStatus()
 }
 
 func (w *WeekdayQueueMonitor) isDuwOffTime() bool {

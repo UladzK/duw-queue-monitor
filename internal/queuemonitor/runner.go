@@ -11,11 +11,17 @@ import (
 type Runner struct {
 	cfg       *Config
 	log       *logger.Logger
-	monitor   *QueueMonitor
+	monitor   QueueMonitor
 	stateRepo *MonitorStateRepository
 }
 
-func NewRunner(cfg *Config, log *logger.Logger, monitor *QueueMonitor, stateRepo *MonitorStateRepository) *Runner {
+type QueueMonitor interface {
+	Init(initState *MonitorState)
+	GetState() *MonitorState
+	CheckAndProcessStatus() error
+}
+
+func NewRunner(cfg *Config, log *logger.Logger, monitor QueueMonitor, stateRepo *MonitorStateRepository) *Runner {
 	return &Runner{
 		cfg:       cfg,
 		log:       log,
