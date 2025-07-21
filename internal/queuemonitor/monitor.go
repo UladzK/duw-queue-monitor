@@ -18,6 +18,12 @@ type QueueMonitor struct {
 	state              *MonitorState
 }
 
+type QueueMonitorInterface interface {
+	Init(initState *MonitorState)
+	GetState() *MonitorState
+	CheckAndProcessStatus() error
+}
+
 func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier notifications.Notifier) *QueueMonitor {
 	return &QueueMonitor{
 		cfg:                cfg,
