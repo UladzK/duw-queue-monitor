@@ -5,7 +5,7 @@ import (
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
-// WeekdayQueueMonitor is a wrapper around the DefaultQueueMonitor that disables queue monitoring on weekends and during off hours (06:00 - 18:00 UTC).
+// WeekdayQueueMonitor is a wrapper around the DefaultQueueMonitor that disables queue monitoring on weekends and during off hours (06:00 - 17:00 UTC).
 // It uses a DateTimeProvider to get the current time, allowing for easier testing and mocking
 // Note: I don't like this idea, but DUW API returns queue active and available during weekends, so this is the easiest way to avoid unnecessary notifications to users.
 type WeekdayQueueMonitor struct {
