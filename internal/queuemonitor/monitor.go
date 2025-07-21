@@ -6,10 +6,10 @@ import (
 	"uladzk/duw_kolejka_checker/internal/queuemonitor/notifications"
 )
 
-// QueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
+// DefaultQueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
 // Essentially, it is a state machine that checks the queue status periodically and notifies about changes.
 // It uses a StatusCollector to get the queue status and a Notifier to send notifications.
-type QueueMonitor struct {
+type DefaultQueueMonitor struct {
 	cfg                *Config
 	log                *logger.Logger
 	collector          *StatusCollector
@@ -18,8 +18,8 @@ type QueueMonitor struct {
 	state              *MonitorState
 }
 
-func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier notifications.Notifier) *QueueMonitor {
-	return &QueueMonitor{
+func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier notifications.Notifier) *DefaultQueueMonitor {
+	return &DefaultQueueMonitor{
 		cfg:                cfg,
 		log:                log,
 		collector:          collector,
@@ -29,7 +29,7 @@ func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector
 	}
 }
 
-func (h *QueueMonitor) Init(initState *MonitorState) {
+func (h *DefaultQueueMonitor) Init(initState *MonitorState) {
 	if initState == nil {
 		panic("QueueMonitor.Init called with nil state. This should not happen")
 	}
@@ -40,11 +40,11 @@ func (h *QueueMonitor) Init(initState *MonitorState) {
 	h.log.Info("QueueMonitor initialized with state:", "initState", initState)
 }
 
-func (h *QueueMonitor) GetState() *MonitorState {
+func (h *DefaultQueueMonitor) GetState() *MonitorState {
 	return h.state
 }
 
-func (h *QueueMonitor) CheckAndProcessStatus() error {
+func (h *DefaultQueueMonitor) CheckAndProcessStatus() error {
 	newState, err := h.collector.GetQueueStatus()
 	if err != nil {
 		return fmt.Errorf("error getting queue status: %w", err)
@@ -72,7 +72,7 @@ func (h *QueueMonitor) CheckAndProcessStatus() error {
 	return nil
 }
 
-func (h *QueueMonitor) stateChanged(newState *Queue) bool {
+func (h *DefaultQueueMonitor) stateChanged(newState *Queue) bool {
 	// Notify if status changed, or tickets left changed (when enabled)
 	if h.statusChanged(newState) || (newState.Enabled && h.state.TicketsLeft != newState.TicketsLeft) {
 		h.log.Debug("Sending notification. Conditions met for notification.", "is not initialized", !h.isStateInitialized, "status changed", h.statusChanged(newState),
@@ -85,11 +85,11 @@ func (h *QueueMonitor) stateChanged(newState *Queue) bool {
 	return false
 }
 
-func (h *QueueMonitor) statusChanged(newQueueStatus *Queue) bool {
+func (h *DefaultQueueMonitor) statusChanged(newQueueStatus *Queue) bool {
 	return h.state.QueueActive != newQueueStatus.Active || h.state.QueueEnabled != newQueueStatus.Enabled
 }
 
-func (h *QueueMonitor) updateState(newQueueStatus *Queue) {
+func (h *DefaultQueueMonitor) updateState(newQueueStatus *Queue) {
 	h.isStateInitialized = true
 	h.state.LastTicketProcessed = newQueueStatus.TicketValue
 	h.state.QueueEnabled = newQueueStatus.Enabled

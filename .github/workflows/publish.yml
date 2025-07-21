@@ -1,6 +1,4 @@
 name: Publish workflow
-description: |
-  This workflow is triggered manually to publish newest version of the application to ACR.
 on:
   workflow_dispatch:
     inputs:

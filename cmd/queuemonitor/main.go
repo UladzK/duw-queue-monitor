@@ -77,8 +77,9 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 	collector := queuemonitor.NewStatusCollector(&cfg.QueueMonitor, httpClient)
 	notifier := buildNotifier(&cfg, log, httpClient)
 	monitor := queuemonitor.NewQueueMonitor(&cfg, log, collector, notifier)
+	weekdayMonitor := queuemonitor.NewWeekdayQueueMonitor(monitor, queuemonitor.NewSystemDateTimeProvider(), log)
 
-	runner := queuemonitor.NewRunner(&cfg, log, monitor, stateRepo)
+	runner := queuemonitor.NewRunner(&cfg, log, weekdayMonitor, stateRepo)
 	return runner, nil
 }
 
