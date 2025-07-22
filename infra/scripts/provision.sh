@@ -5,14 +5,15 @@ set -euo pipefail
 # --- Validate Inputs ---
 
 # Usage check
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <module> <env>"
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 <module> <env> [-destroy]"
   exit 1
 fi
 
 # --- Input Arguments ---
 MODULE="$1"
 ENV="$2"
+DESTROY=false
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 MODULE_DIR="$SCRIPT_DIR/../terraform/$MODULE"
 
@@ -22,6 +23,10 @@ readonly INFISICAL_PROJECT_ID="145e0d1a-6378-4338-a9eb-2d77178f96e7" # terraform
 
 # --- Script workflow ---
 
+if [[ $# -gt 2 && "$3" == "-destroy" ]]; then
+  DESTROY=true
+fi
+
 if [[ ! -d "$MODULE_DIR" ]]; then
   echo "❌ Error: Module directory '$MODULE_DIR' does not exist."
   exit 1
@@ -29,6 +34,7 @@ fi
 
 echo "🔧 Module dir: $MODULE_DIR"
 echo "🌍 Environment: $ENV"
+echo "🔨 Destroy flag: $DESTROY"
 cd "$MODULE_DIR"
 
 # --- Infisical Login ---
@@ -51,7 +57,14 @@ terraform init -backend-config="envs/$ENV/backend.hcl"
 echo "🛠️ Planning infrastructure changes..."
 PLAN_OUT="${ENV}.tfplan"
 
+if [[ "$DESTROY" == true ]]; then
+  PLAN_OPTIONS="-destroy"
+else
+  PLAN_OPTIONS=""
+fi
+
 infisical run --env="$ENV" --projectId=$INFISICAL_PROJECT_ID -- terraform plan \
+  $PLAN_OPTIONS \
   -var-file="envs/$ENV/$ENV.tfvars" \
   -out="$PLAN_OUT"
 
