@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 	"uladzk/duw_kolejka_checker/internal/logger"
+	"uladzk/duw_kolejka_checker/internal/notifications"
 	"uladzk/duw_kolejka_checker/internal/queuemonitor"
-	"uladzk/duw_kolejka_checker/internal/queuemonitor/notifications"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/redis/go-redis/v9"
@@ -83,7 +83,7 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 	return runner, nil
 }
 
-func buildNotifier(cfg *queuemonitor.Config, log *logger.Logger, httpClient *http.Client) notifications.Notifier {
+func buildNotifier(cfg *queuemonitor.Config, log *logger.Logger, httpClient *http.Client) queuemonitor.Notifier {
 	if cfg.UseTelegramNotifications {
 		return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
 	}

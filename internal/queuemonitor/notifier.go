@@ -1,4 +1,4 @@
-package notifications
+package queuemonitor
 
 // Notifier defines the interface for sending notifications about queue status updates.
 type Notifier interface {
