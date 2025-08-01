@@ -19,10 +19,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	done := make(chan bool, 1)
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
 	log, err := buildLogger()
 	if err != nil {
 		panic("failed to initialize logger: " + err.Error())
@@ -33,9 +29,14 @@ func main() {
 		panic("failed to initialize runner: " + err.Error())
 	}
 
-	log.Info("Queue monitor started")
+	log.Info("Starting queue monitor...")
+
+	done := make(chan bool, 1)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go runner.Run(ctx, done)
 
+	log.Info("Queue monitor started. Waiting for shutdown signal...")
 	<-sigChan
 	log.Info("Received shutdown signal, stopping status collector...")
 	cancel()
