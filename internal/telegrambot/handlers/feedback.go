@@ -9,23 +9,31 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-type FeedbackHandler struct{}
+type FeedbackHandler struct {
+	log *logger.Logger
+}
+
+func NewFeedbackHandler(log *logger.Logger) *FeedbackHandler {
+	return &FeedbackHandler{
+		log: log,
+	}
+}
 
 func (f *FeedbackHandler) GetReplyPatterns() []string {
 	return []string{"Please reply to this message with your general feedback:"}
 }
 
-func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *models.Update, log *logger.Logger) {
+func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *models.Update) {
 	chatID := update.Message.Chat.ID
 	feedbackText := update.Message.Text
 	user := update.Message.From
 
-	log.Info("General feedback received. No specific type to process.")
-	log.Info(fmt.Sprintf(
+	f.log.Info("General feedback received. No specific type to process.")
+	f.log.Info(fmt.Sprintf(
 		"Feedback (feedback_general) from @%s (userID=%d, chatID=%d): %q",
 		user.Username, user.ID, chatID, feedbackText,
 	))
-	log.Info(update.Message.Text)
+	f.log.Info(update.Message.Text)
 
 	thankYouText := "Thank you for your feedback! We appreciate your input and will consider it for future improvements."
 
@@ -34,22 +42,21 @@ func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *m
 		Text:      thankYouText,
 		ParseMode: models.ParseModeHTML,
 	}); err != nil {
-		log.Error("Failed to send thank you message: ", err)
+		f.log.Error("Failed to send thank you message: ", err)
 	} else {
-		log.Info("Thank you message sent to user: " + msg.Text)
+		f.log.Info("Thank you message sent to user: " + msg.Text)
 	}
 }
 
-func RegisterFeedbackHandler(b *bot.Bot, log *logger.Logger, replyRegistry ReplyRegistry) {
+func (f *FeedbackHandler) Register(b *bot.Bot, replyRegistry ReplyRegistry) {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "feedback", bot.MatchTypeCommand, func(ctx context.Context, b *bot.Bot, update *models.Update) {
-		feedbackCommandHandler(ctx, b, update, log)
+		f.HandleUpdate(ctx, b, update)
 	})
 
-	feedbackHandler := &FeedbackHandler{}
-	replyRegistry.RegisterReplyHandler(feedbackHandler)
+	replyRegistry.RegisterReplyHandler(f)
 }
 
-func feedbackCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update, log *logger.Logger) {
+func (f *FeedbackHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *models.Update) {
 	chatID := update.Message.Chat.ID
 	promptForFeedbackText(ctx, b, chatID, update.Message.ID, "general", "💬")
 }

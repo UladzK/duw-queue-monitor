@@ -9,6 +9,11 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
+type Handler interface {
+	Register(b *bot.Bot, replyRegistry handlers.ReplyRegistry)
+	HandleUpdate(ctx context.Context, b *bot.Bot, update *models.Update)
+}
+
 type ReplyHandlerRegistry struct {
 	patternToHandler map[string]handlers.ReplyHandler
 }
@@ -30,34 +35,29 @@ func (r *ReplyHandlerRegistry) FindHandler(replyText string) handlers.ReplyHandl
 }
 
 type HandlerRegistry struct {
-	bot           *bot.Bot
 	logger        *logger.Logger
 	replyRegistry *ReplyHandlerRegistry
+	handlersMap   map[string]Handler
 }
 
-func NewHandlerRegistry(b *bot.Bot, log *logger.Logger) *HandlerRegistry {
+func NewHandlerRegistry(log *logger.Logger) *HandlerRegistry {
+	handlersMap := map[string]Handler{
+		"feedback": handlers.NewFeedbackHandler(log),
+	}
+
 	return &HandlerRegistry{
-		bot:           b,
 		logger:        log,
 		replyRegistry: NewReplyHandlerRegistry(),
+		handlersMap:   handlersMap,
 	}
-}
-
-func (hr *HandlerRegistry) GetReplyRegistry() *ReplyHandlerRegistry {
-	return hr.replyRegistry
 }
 
 func (hr *HandlerRegistry) GetDefaultHandler() func(context.Context, *bot.Bot, *models.Update) {
-	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
-		handlers.DefaultHandler(ctx, b, update, hr.logger, hr.replyRegistry)
+	return handlers.NewDefaultHandler(hr.logger, hr.replyRegistry).HandleUpdate
+}
+
+func (hr *HandlerRegistry) RegisterAllHandlers(b *bot.Bot) {
+	for _, handler := range hr.handlersMap {
+		handler.Register(b, hr.replyRegistry)
 	}
-}
-
-func (hr *HandlerRegistry) UpdateBot(newBot *bot.Bot) {
-	hr.bot = newBot
-}
-
-func (hr *HandlerRegistry) RegisterAllHandlers() {
-	handlers.RegisterFeedbackHandler(hr.bot, hr.logger, hr.replyRegistry)
-	handlers.RegisterDefaultHandler(hr.bot, hr.logger, hr.replyRegistry)
 }

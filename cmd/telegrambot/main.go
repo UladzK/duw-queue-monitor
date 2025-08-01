@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -65,26 +64,20 @@ func buildBotWithHandlers() (*bot.Bot, *telegrambot.HandlerRegistry, error) {
 		return nil, nil, err
 	}
 
-	tempBot, err := bot.New(cfg.NotificationTelegram.BotToken)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create temporary bot: %w", err)
-	}
-
-	handlerRegistry := telegrambot.NewHandlerRegistry(tempBot, log)
+	handlerRegistry := telegrambot.NewHandlerRegistry(log)
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handlerRegistry.GetDefaultHandler()),
 	}
 
-	actualBot, err := bot.New(cfg.NotificationTelegram.BotToken, opts...)
+	bot, err := bot.New(cfg.NotificationTelegram.BotToken, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	handlerRegistry.UpdateBot(actualBot)
-	handlerRegistry.RegisterAllHandlers()
+	handlerRegistry.RegisterAllHandlers(bot)
 
-	return actualBot, handlerRegistry, nil
+	return bot, handlerRegistry, nil
 }
 
 func buildLogger() (*logger.Logger, error) {

@@ -8,24 +8,30 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func RegisterDefaultHandler(b *bot.Bot, log *logger.Logger, replyRegistry ReplyRegistry) {
-	// Default handler is set during bot creation with bot.WithDefaultHandler option
-	// This function exists for consistency but actual registration happens in buildBot
+type DefaultHandler struct {
+	replyRegistry ReplyRegistry
+	log           *logger.Logger
 }
 
-func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update, log *logger.Logger, replyRegistry ReplyRegistry) {
-	log.Info("Processing message in default handler")
+func NewDefaultHandler(log *logger.Logger, replyRegistry ReplyRegistry) *DefaultHandler {
+	return &DefaultHandler{
+		log:           log,
+		replyRegistry: replyRegistry,
+	}
+}
+
+func (d *DefaultHandler) Register(b *bot.Bot, replyRegistry ReplyRegistry) {
+}
+
+func (d *DefaultHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	if update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Text != "" {
-		handlerInterface := replyRegistry.FindHandler(update.Message.ReplyToMessage.Text)
+		handlerInterface := d.replyRegistry.FindHandler(update.Message.ReplyToMessage.Text)
 		if handlerInterface != nil {
-			// Import the ReplyHandler interface from telegrambot package
-			if handler, ok := handlerInterface.(interface {
-				HandleReply(ctx context.Context, b *bot.Bot, update *models.Update, log *logger.Logger)
-			}); ok {
-				handler.HandleReply(ctx, b, update, log)
-				return
-			}
+			handlerInterface.HandleReply(ctx, b, update)
+			return
+		} else {
+			d.log.Warn("No handler found for reply: " + update.Message.ReplyToMessage.Text)
 		}
 	}
 
@@ -40,8 +46,8 @@ func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update, log 
 		Text:      showMenuText,
 		ParseMode: models.ParseModeHTML,
 	}); err != nil {
-		log.Error("Failed to send menu message: ", err)
+		d.log.Error("Failed to send menu message: ", err)
 	} else {
-		log.Info("Menu message sent to user: " + msg.Text)
+		d.log.Info("Menu message sent to user: " + msg.Text)
 	}
 }
