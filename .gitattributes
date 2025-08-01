@@ -1,2 +1,2 @@
 * text=auto
-*.sh text eol=lf          # Ensure shell scripts have LF encodings to avoid breaking scripts
+*.sh text eol=lf
