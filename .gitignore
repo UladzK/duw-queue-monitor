@@ -47,3 +47,4 @@ go.work.sum
 #### Misc ####
 # Logs
 *.log
+settings.local.json
