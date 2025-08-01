@@ -9,10 +9,6 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-type ReplyHandlerRegistry interface {
-	RegisterReplyHandler(handler interface{})
-}
-
 type FeedbackHandler struct{}
 
 func (f *FeedbackHandler) GetReplyPatterns() []string {
@@ -44,8 +40,7 @@ func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *m
 	}
 }
 
-
-func RegisterFeedbackHandler(b *bot.Bot, log *logger.Logger, replyRegistry ReplyHandlerRegistry) {
+func RegisterFeedbackHandler(b *bot.Bot, log *logger.Logger, replyRegistry ReplyRegistry) {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "feedback", bot.MatchTypeCommand, func(ctx context.Context, b *bot.Bot, update *models.Update) {
 		feedbackCommandHandler(ctx, b, update, log)
 	})

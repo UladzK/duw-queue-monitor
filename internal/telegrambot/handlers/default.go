@@ -8,16 +8,12 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-type ReplyHandlerFinder interface {
-	FindHandler(replyText string) interface{}
-}
-
-func RegisterDefaultHandler(b *bot.Bot, log *logger.Logger, replyRegistry ReplyHandlerFinder) {
+func RegisterDefaultHandler(b *bot.Bot, log *logger.Logger, replyRegistry ReplyRegistry) {
 	// Default handler is set during bot creation with bot.WithDefaultHandler option
 	// This function exists for consistency but actual registration happens in buildBot
 }
 
-func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update, log *logger.Logger, replyRegistry ReplyHandlerFinder) {
+func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update, log *logger.Logger, replyRegistry ReplyRegistry) {
 	log.Info("Processing message in default handler")
 
 	if update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Text != "" {

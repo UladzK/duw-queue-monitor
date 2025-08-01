@@ -1,4 +1,4 @@
-package telegrambot
+package handlers
 
 import (
 	"context"
@@ -11,4 +11,9 @@ import (
 type ReplyHandler interface {
 	GetReplyPatterns() []string
 	HandleReply(ctx context.Context, b *bot.Bot, update *models.Update, log *logger.Logger)
+}
+
+type ReplyRegistry interface {
+	RegisterReplyHandler(handler ReplyHandler)
+	FindHandler(replyText string) ReplyHandler
 }

@@ -65,18 +65,13 @@ func buildBotWithHandlers() (*bot.Bot, *telegrambot.HandlerRegistry, error) {
 		return nil, nil, err
 	}
 
-	log.Info("Config: ", cfg)
-
-	// Create a temporary bot first to build the handler registry
 	tempBot, err := bot.New(cfg.NotificationTelegram.BotToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create temporary bot: %w", err)
 	}
 
-	// Create handler registry
 	handlerRegistry := telegrambot.NewHandlerRegistry(tempBot, log)
 
-	// Now create the actual bot with the default handler configured
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handlerRegistry.GetDefaultHandler()),
 	}
@@ -86,7 +81,6 @@ func buildBotWithHandlers() (*bot.Bot, *telegrambot.HandlerRegistry, error) {
 		return nil, nil, err
 	}
 
-	// Update registry with actual bot and register handlers
 	handlerRegistry.UpdateBot(actualBot)
 	handlerRegistry.RegisterAllHandlers()
 

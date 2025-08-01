@@ -10,24 +10,22 @@ import (
 )
 
 type ReplyHandlerRegistry struct {
-	patternToHandler map[string]ReplyHandler
+	patternToHandler map[string]handlers.ReplyHandler
 }
 
 func NewReplyHandlerRegistry() *ReplyHandlerRegistry {
 	return &ReplyHandlerRegistry{
-		patternToHandler: make(map[string]ReplyHandler),
+		patternToHandler: make(map[string]handlers.ReplyHandler),
 	}
 }
 
-func (r *ReplyHandlerRegistry) RegisterReplyHandler(handler interface{}) {
-	if h, ok := handler.(ReplyHandler); ok {
-		for _, pattern := range h.GetReplyPatterns() {
-			r.patternToHandler[pattern] = h
-		}
+func (r *ReplyHandlerRegistry) RegisterReplyHandler(handler handlers.ReplyHandler) {
+	for _, pattern := range handler.GetReplyPatterns() {
+		r.patternToHandler[pattern] = handler
 	}
 }
 
-func (r *ReplyHandlerRegistry) FindHandler(replyText string) interface{} {
+func (r *ReplyHandlerRegistry) FindHandler(replyText string) handlers.ReplyHandler {
 	return r.patternToHandler[replyText]
 }
 
