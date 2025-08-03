@@ -53,7 +53,7 @@ func NewHandlerRegistry(log *logger.Logger) *HandlerRegistry {
 }
 
 func (hr *HandlerRegistry) GetDefaultHandler() func(context.Context, *bot.Bot, *models.Update) {
-	return handlers.NewDefaultHandler(hr.logger, hr.replyRegistry).HandleUpdate
+	return handlers.NewDefaultHandler(hr.logger, hr.replyRegistry, hr).HandleUpdate
 }
 
 func (hr *HandlerRegistry) RegisterAllHandlers(b *bot.Bot) {
