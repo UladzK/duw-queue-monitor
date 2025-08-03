@@ -25,13 +25,13 @@ func main() {
 	}
 
 	log.Info("Building bot with handlers...")
-	b, _, err := buildBotWithHandlers()
+	b, handlerRegistry, err := buildBotWithHandlers()
 	if err != nil {
 		panic(err)
 	}
 
 	log.Info("Configuring Telegram bot profile...")
-	if err := setProfile(ctx, b); err != nil {
+	if err := setProfile(ctx, b, handlerRegistry); err != nil {
 		panic("failed to set bot profile: " + err.Error())
 	}
 	log.Info("Bot profile set successfully")
@@ -50,8 +50,8 @@ func main() {
 	log.Info("Telegram bot stopped")
 }
 
-func setProfile(ctx context.Context, b *bot.Bot) error {
-	profile := telegrambot.NewProfile(b)
+func setProfile(ctx context.Context, b *bot.Bot, registry *telegrambot.HandlerRegistry) error {
+	profile := telegrambot.NewProfile(b, registry)
 	if err := profile.SetProfile(ctx); err != nil {
 		return err
 	}

@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/go-telegram/bot"
-	"github.com/go-telegram/bot/models"
 )
 
 type Profile struct {
-	bot *bot.Bot
+	bot      *bot.Bot
+	registry *HandlerRegistry
 }
 
-func NewProfile(b *bot.Bot) *Profile {
-	return &Profile{bot: b}
+func NewProfile(b *bot.Bot, registry *HandlerRegistry) *Profile {
+	return &Profile{bot: b, registry: registry}
 }
 
 func (p *Profile) SetProfile(ctx context.Context) error {
@@ -29,12 +29,7 @@ func (p *Profile) SetProfile(ctx context.Context) error {
 	})
 
 	p.bot.SetMyCommands(ctx, &bot.SetMyCommandsParams{
-		Commands: []models.BotCommand{
-			{
-				Command:     "feedback",
-				Description: "Send feedback about the bot",
-			},
-		},
+		Commands: p.registry.GetAvailableCommands(),
 	})
 
 	return nil

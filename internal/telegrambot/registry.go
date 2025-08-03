@@ -61,3 +61,14 @@ func (hr *HandlerRegistry) RegisterAllHandlers(b *bot.Bot) {
 		handler.Register(b, hr.replyRegistry)
 	}
 }
+
+func (hr *HandlerRegistry) GetAvailableCommands() []models.BotCommand {
+	commands := make([]models.BotCommand, 0, len(hr.handlersMap))
+	for commandName := range hr.handlersMap {
+		commands = append(commands, models.BotCommand{
+			Command:     commandName,
+			Description: commandName,
+		})
+	}
+	return commands
+}
