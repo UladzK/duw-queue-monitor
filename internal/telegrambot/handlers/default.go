@@ -14,6 +14,19 @@ const (
 	menuTemplate = "Witaj!\n\n<b>Dostępne komendy</b>\n%s\n\nUżyj /start aby zobaczyć to menu ponownie\n"
 )
 
+func buildMenuMessage(handlerRegistry HandlerRegistry) string {
+	commands := handlerRegistry.GetAvailableCommands()
+	commandStrings := make([]string, 0, len(commands))
+
+	for _, cmd := range commands {
+		commandStrings = append(commandStrings, fmt.Sprintf("/%s - %s", cmd.Command, cmd.Description))
+	}
+
+	commandsText := strings.Join(commandStrings, "\n")
+	menuMessage := fmt.Sprintf(menuTemplate, commandsText)
+	return menuMessage
+}
+
 type HandlerRegistry interface {
 	GetAvailableCommands() []models.BotCommand
 }
@@ -22,6 +35,7 @@ type DefaultHandler struct {
 	replyRegistry   ReplyRegistry
 	log             *logger.Logger
 	handlerRegistry HandlerRegistry
+	menuMessage     string
 }
 
 func NewDefaultHandler(log *logger.Logger, replyRegistry ReplyRegistry, handlerRegistry HandlerRegistry) *DefaultHandler {
@@ -29,6 +43,7 @@ func NewDefaultHandler(log *logger.Logger, replyRegistry ReplyRegistry, handlerR
 		log:             log,
 		replyRegistry:   replyRegistry,
 		handlerRegistry: handlerRegistry,
+		menuMessage:     buildMenuMessage(handlerRegistry),
 	}
 }
 
@@ -60,24 +75,10 @@ func (d *DefaultHandler) handleReplyMessage(ctx context.Context, b *bot.Bot, upd
 	return true
 }
 
-func (d *DefaultHandler) buildMenuMessage() string {
-	commands := d.handlerRegistry.GetAvailableCommands()
-	commandStrings := make([]string, 0, len(commands))
-
-	for _, cmd := range commands {
-		commandStrings = append(commandStrings, fmt.Sprintf("/%s - %s", cmd.Command, cmd.Description))
-	}
-
-	commandsText := strings.Join(commandStrings, "\n")
-	return fmt.Sprintf(menuTemplate, commandsText)
-}
-
 func (d *DefaultHandler) sendDefaultMenu(ctx context.Context, b *bot.Bot, chatID int64) {
-	menuMessage := d.buildMenuMessage()
-
 	msg, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    chatID,
-		Text:      menuMessage,
+		Text:      d.menuMessage,
 		ParseMode: models.ParseModeHTML,
 	})
 
