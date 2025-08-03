@@ -51,7 +51,7 @@ func main() {
 }
 
 func setProfile(ctx context.Context, b *bot.Bot, registry *telegrambot.HandlerRegistry) error {
-	profile := telegrambot.NewProfile(b, registry)
+	profile := telegrambot.NewProfile(b, registry, log)
 	if err := profile.SetProfile(ctx); err != nil {
 		return err
 	}
