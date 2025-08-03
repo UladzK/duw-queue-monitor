@@ -2,11 +2,16 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"uladzk/duw_kolejka_checker/internal/logger"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+)
+
+const (
+	thankYouText      = "Dziękujemy za Twoją opinię! Twoja wiadomość została wysłana do nas."
+	feedbackInfoText  = "Możesz wysłać swoją opinię na temat działania bota. Twoja wiadomość będzie anonimowa i nie będzie publikowana."
+	feedbackReplyText = "Aby wysłać opinię, proszę odpowiedz na tę wiadomość swoją opinią:"
 )
 
 type FeedbackHandler struct {
@@ -20,31 +25,16 @@ func NewFeedbackHandler(log *logger.Logger) *FeedbackHandler {
 }
 
 func (f *FeedbackHandler) GetReplyPatterns() []string {
-	return []string{"Please reply to this message with your general feedback:"}
+	return []string{feedbackReplyText}
 }
 
 func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *models.Update) {
-	chatID := update.Message.Chat.ID
-	feedbackText := update.Message.Text
-	user := update.Message.From
-
-	f.log.Info("General feedback received. No specific type to process.")
-	f.log.Info(fmt.Sprintf(
-		"Feedback (feedback_general) from @%s (userID=%d, chatID=%d): %q",
-		user.Username, user.ID, chatID, feedbackText,
-	))
-	f.log.Info(update.Message.Text)
-
-	thankYouText := "Thank you for your feedback! We appreciate your input and will consider it for future improvements."
-
-	if msg, err := b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:    chatID,
+	if _, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
 		Text:      thankYouText,
 		ParseMode: models.ParseModeHTML,
 	}); err != nil {
-		f.log.Error("Failed to send thank you message: ", err)
-	} else {
-		f.log.Info("Thank you message sent to user: " + msg.Text)
+		f.log.Error("Failed to send thank you message for feedback: ", err)
 	}
 }
 
@@ -57,23 +47,18 @@ func (f *FeedbackHandler) Register(b *bot.Bot, replyRegistry ReplyRegistry) {
 }
 
 func (f *FeedbackHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *models.Update) {
-	chatID := update.Message.Chat.ID
-	promptForFeedbackText(ctx, b, chatID, update.Message.ID, "general", "💬")
-}
-
-func promptForFeedbackText(ctx context.Context, b *bot.Bot, chatID int64, messageID int, feedbackType, emoji string) {
-	b.EditMessageText(ctx, &bot.EditMessageTextParams{
-		ChatID:    chatID,
-		MessageID: messageID,
-		Text:      fmt.Sprintf("%s You selected: %s feedback", emoji, feedbackType),
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		Text:      feedbackInfoText,
+		ParseMode: models.ParseModeHTML,
 	})
 
 	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID: chatID,
-		Text:   fmt.Sprintf("Please reply to this message with your %s feedback:", feedbackType),
+		ChatID: update.Message.Chat.ID,
+		Text:   feedbackReplyText,
 		ReplyMarkup: &models.ForceReply{
 			ForceReply:            true,
-			InputFieldPlaceholder: fmt.Sprintf("Type your %s feedback here...", feedbackType),
+			InputFieldPlaceholder: "Napisz swoją opinię tutaj...",
 			Selective:             true,
 		},
 	})
