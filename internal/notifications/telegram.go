@@ -29,14 +29,12 @@ type SendMessageChannelRequest struct {
 	ParseMode string `json:"parse_mode"` // needed to correctly format the message in Telegram
 }
 
-func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
-	// todo: move to object fields
-	channelName := fmt.Sprintf("@%s", s.cfg.BroadcastChannelName)
+func (s *TelegramNotifier) SendMessage(chatID, text string) error {
 	botApiFullUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.BaseApiUrl, s.cfg.BotToken)
 
 	reqBody := SendMessageChannelRequest{
-		ChatID:    channelName,
-		Text:      buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft),
+		ChatID:    chatID,
+		Text:      text,
 		ParseMode: parseMode,
 	}
 	b, err := json.Marshal(reqBody)
@@ -48,18 +46,29 @@ func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName st
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		respTxt, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed to send notification to TelegramApi. got unsuccessful status code: %d", resp.StatusCode)
+			return fmt.Errorf("failed to send message to TelegramApi. got unsuccessful status code: %d", resp.StatusCode)
 		}
 
-		return fmt.Errorf("failed to send notification to TelegramApi. got unsuccessful status code: %d, api response: \"%s\"", resp.StatusCode, respTxt)
+		return fmt.Errorf("failed to send message to TelegramApi. got unsuccessful status code: %d, api response: \"%s\"", resp.StatusCode, respTxt)
 	}
 
-	s.log.Info("General queue status update notification sent successfully to TelegramApi.")
-	defer resp.Body.Close()
+	s.log.Info("Message sent successfully to TelegramApi.")
+	return nil
+}
 
+func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
+	channelName := fmt.Sprintf("@%s", s.cfg.BroadcastChannelName)
+	message := buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft)
+	
+	if err := s.SendMessage(channelName, message); err != nil {
+		return err
+	}
+	
+	s.log.Info("General queue status update notification sent successfully to TelegramApi.")
 	return nil
 }

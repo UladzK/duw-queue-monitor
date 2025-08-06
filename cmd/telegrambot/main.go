@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"uladzk/duw_kolejka_checker/internal/logger"
+	"uladzk/duw_kolejka_checker/internal/notifications"
 	"uladzk/duw_kolejka_checker/internal/telegrambot"
 
 	"github.com/caarlos0/env/v11"
@@ -64,7 +66,10 @@ func buildBotWithHandlers() (*bot.Bot, *telegrambot.HandlerRegistry, error) {
 		return nil, nil, err
 	}
 
-	handlerRegistry := telegrambot.NewHandlerRegistry(log)
+	// Create telegram notifier for admin notifications
+	telegramNotifier := notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, &http.Client{})
+
+	handlerRegistry := telegrambot.NewHandlerRegistry(log, telegramNotifier, cfg.NotificationTelegram.AdminChatID)
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handlerRegistry.GetDefaultHandler()),

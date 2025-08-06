@@ -3,6 +3,7 @@ package telegrambot
 import (
 	"context"
 	"uladzk/duw_kolejka_checker/internal/logger"
+	"uladzk/duw_kolejka_checker/internal/notifications"
 	"uladzk/duw_kolejka_checker/internal/telegrambot/handlers"
 
 	"github.com/go-telegram/bot"
@@ -35,20 +36,24 @@ func (r *ReplyHandlerRegistry) FindHandler(replyText string) handlers.ReplyHandl
 }
 
 type HandlerRegistry struct {
-	logger        *logger.Logger
-	replyRegistry *ReplyHandlerRegistry
-	handlersMap   map[string]Handler
+	logger           *logger.Logger
+	replyRegistry    *ReplyHandlerRegistry
+	handlersMap      map[string]Handler
+	telegramNotifier *notifications.TelegramNotifier
+	adminChatID      string
 }
 
-func NewHandlerRegistry(log *logger.Logger) *HandlerRegistry {
+func NewHandlerRegistry(log *logger.Logger, telegramNotifier *notifications.TelegramNotifier, adminChatID string) *HandlerRegistry {
 	handlersMap := map[string]Handler{
-		"feedback": handlers.NewFeedbackHandler(log),
+		"feedback": handlers.NewFeedbackHandler(log, telegramNotifier, adminChatID),
 	}
 
 	return &HandlerRegistry{
-		logger:        log,
-		replyRegistry: NewReplyHandlerRegistry(),
-		handlersMap:   handlersMap,
+		logger:           log,
+		replyRegistry:    NewReplyHandlerRegistry(),
+		handlersMap:      handlersMap,
+		telegramNotifier: telegramNotifier,
+		adminChatID:      adminChatID,
 	}
 }
 

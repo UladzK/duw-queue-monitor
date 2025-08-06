@@ -53,6 +53,13 @@ func (d *DefaultHandler) Register(b *bot.Bot, replyRegistry ReplyRegistry) {
 }
 
 func (d *DefaultHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update == nil || update.Message == nil {
+		d.log.Warn("Received empty update, skipping")
+		return
+	}
+
+	d.log.Debug(fmt.Sprintf("Received message from chat ID %d: %s", update.Message.Chat.ID, update.Message.Text))
+
 	if d.handleReplyMessage(ctx, b, update) {
 		return
 	}
@@ -61,7 +68,7 @@ func (d *DefaultHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *m
 }
 
 func (d *DefaultHandler) handleReplyMessage(ctx context.Context, b *bot.Bot, update *models.Update) bool {
-	if update.Message.ReplyToMessage == nil || update.Message.ReplyToMessage.Text == "" {
+	if update == nil || update.Message == nil || update.Message.ReplyToMessage == nil || update.Message.ReplyToMessage.Text == "" {
 		return false
 	}
 
@@ -76,6 +83,10 @@ func (d *DefaultHandler) handleReplyMessage(ctx context.Context, b *bot.Bot, upd
 }
 
 func (d *DefaultHandler) sendDefaultMenu(ctx context.Context, b *bot.Bot, chatID int64) {
+	if b == nil {
+		return
+	}
+
 	msg, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    chatID,
 		Text:      d.menuMessage,
