@@ -10,5 +10,5 @@ type TelegramConfig struct {
 	BaseApiUrl           string `env:"NOTIFICATION_TELEGRAM_API_BASE_URL" envDefault:"https://api.telegram.org"`
 	BroadcastChannelName string `env:"NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME,required"`
 	BotToken             string `env:"NOTIFICATION_TELEGRAM_BOT_TOKEN,required"`
-	AdminChatID          string `env:"NOTIFICATION_TELEGRAM_ADMIN_CHAT_ID,required"`
+	FeedbackChatID       string `env:"NOTIFICATION_TELEGRAM_FEEDBACK_CHAT_ID,required"`
 }

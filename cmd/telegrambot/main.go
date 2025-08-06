@@ -69,7 +69,7 @@ func buildBotWithHandlers() (*bot.Bot, *telegrambot.HandlerRegistry, error) {
 	// Create telegram notifier for admin notifications
 	telegramNotifier := notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, &http.Client{})
 
-	handlerRegistry := telegrambot.NewHandlerRegistry(log, telegramNotifier, cfg.NotificationTelegram.AdminChatID)
+	handlerRegistry := telegrambot.NewHandlerRegistry(log, telegramNotifier, cfg.NotificationTelegram.FeedbackChatID)
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handlerRegistry.GetDefaultHandler()),
