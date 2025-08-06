@@ -8,20 +8,16 @@ import (
 	"os/signal"
 	"syscall"
 	"uladzk/duw_kolejka_checker/internal/logger"
+	"uladzk/duw_kolejka_checker/internal/notifications"
 	"uladzk/duw_kolejka_checker/internal/queuemonitor"
-	"uladzk/duw_kolejka_checker/internal/queuemonitor/notifications"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/redis/go-redis/v9"
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background())
 	defer cancel()
-
-	done := make(chan bool, 1)
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	log, err := buildLogger()
 	if err != nil {
@@ -33,9 +29,14 @@ func main() {
 		panic("failed to initialize runner: " + err.Error())
 	}
 
-	log.Info("Queue monitor started")
+	log.Info("Starting queue monitor...")
+
+	done := make(chan bool, 1)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go runner.Run(ctx, done)
 
+	log.Info("Queue monitor started. Waiting for shutdown signal...")
 	<-sigChan
 	log.Info("Received shutdown signal, stopping status collector...")
 	cancel()
@@ -83,7 +84,7 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 	return runner, nil
 }
 
-func buildNotifier(cfg *queuemonitor.Config, log *logger.Logger, httpClient *http.Client) notifications.Notifier {
+func buildNotifier(cfg *queuemonitor.Config, log *logger.Logger, httpClient *http.Client) queuemonitor.Notifier {
 	if cfg.UseTelegramNotifications {
 		return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
 	}

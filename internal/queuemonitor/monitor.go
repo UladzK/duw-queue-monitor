@@ -3,7 +3,6 @@ package queuemonitor
 import (
 	"fmt"
 	"uladzk/duw_kolejka_checker/internal/logger"
-	"uladzk/duw_kolejka_checker/internal/queuemonitor/notifications"
 )
 
 // DefaultQueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
@@ -13,12 +12,12 @@ type DefaultQueueMonitor struct {
 	cfg                *Config
 	log                *logger.Logger
 	collector          *StatusCollector
-	notifier           notifications.Notifier
+	notifier           Notifier
 	isStateInitialized bool
 	state              *MonitorState
 }
 
-func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier notifications.Notifier) *DefaultQueueMonitor {
+func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier Notifier) *DefaultQueueMonitor {
 	return &DefaultQueueMonitor{
 		cfg:                cfg,
 		log:                log,
@@ -60,7 +59,7 @@ func (h *DefaultQueueMonitor) CheckAndProcessStatus() error {
 	shouldNotifyStatusUpdate := !h.isStateInitialized || h.stateChanged(newState)
 
 	if shouldNotifyStatusUpdate {
-		if err := h.notifier.SendGeneralQueueStatusUpdateNotification(newState.Name, newState.Active, newState.Enabled,
+		if err := h.notifier.SendGeneralQueueStatusUpdateNotification(h.cfg.BroadcastChannelName, newState.Name, newState.Active, newState.Enabled,
 			newState.TicketValue, newState.TicketsLeft); err != nil {
 			return fmt.Errorf("error sending queue enabled notifiication: %w", err)
 		}

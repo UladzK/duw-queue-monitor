@@ -1,10 +1,11 @@
 package queuemonitor
 
-import "uladzk/duw_kolejka_checker/internal/queuemonitor/notifications"
+import "uladzk/duw_kolejka_checker/internal/notifications"
 
 type Config struct {
-	StatusCheckInternalSeconds int  `env:"STATUS_CHECK_INTERVAL_SECONDS" envDefault:"10"`
-	UseTelegramNotifications   bool `env:"USE_TELEGRAM_NOTIFICATIONS" envDefault:"false"`
+	StatusCheckInternalSeconds int    `env:"STATUS_CHECK_INTERVAL_SECONDS" envDefault:"10"`
+	UseTelegramNotifications   bool   `env:"USE_TELEGRAM_NOTIFICATIONS" envDefault:"false"`
+	BroadcastChannelName       string `env:"NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME,required"`
 	QueueMonitor               QueueMonitorConfig
 	NotificationPushOver       notifications.PushOverConfig
 	NotificationTelegram       notifications.TelegramConfig

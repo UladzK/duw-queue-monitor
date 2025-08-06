@@ -59,7 +59,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenAvailableMessage_SendsNotification
 	sut := NewPushOverNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", true, true, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("", "test-queue", true, true, "K80", 10)
 
 	// Assert
 	if err != nil {
@@ -117,7 +117,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenUnavailableMessage_SendsNotificati
 	sut := NewPushOverNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", true, false, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("", "test-queue", true, false, "K80", 10)
 
 	// Assert
 	if err != nil {
@@ -145,7 +145,7 @@ func TestSendGeneralQueueStatusUpdatePush_WhenSendNotificationFailed_ReturnsErro
 	sut := NewPushOverNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendGeneralQueueStatusUpdateNotification("test-queue", true, true, "K80", 10)
+	err := sut.SendGeneralQueueStatusUpdateNotification("", "test-queue", true, true, "K80", 10)
 
 	// Assert
 	if err == nil {

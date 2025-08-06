@@ -16,7 +16,7 @@ type mockNotifier struct {
 	lastSentStatus *Queue
 }
 
-func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, active bool, enabled bool, actualTicket string, numberOfTicketsLeft int) error {
+func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannelName, queueName string, active bool, enabled bool, actualTicket string, numberOfTicketsLeft int) error {
 	f.called = true
 
 	if f.shouldFail {
