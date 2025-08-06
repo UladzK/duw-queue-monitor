@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background())
 	defer cancel()
 
 	log, err := buildLogger()
