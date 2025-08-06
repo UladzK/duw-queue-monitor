@@ -54,6 +54,7 @@ func main() {
 
 func setProfile(ctx context.Context, b *bot.Bot, registry *telegrambot.HandlerRegistry) error {
 	profile := telegrambot.NewProfile(b, registry, log)
+	// TODO: setting profile commands fails intermittently with the error "context canceled", investigate and fix
 	if err := profile.SetProfile(ctx); err != nil {
 		return err
 	}

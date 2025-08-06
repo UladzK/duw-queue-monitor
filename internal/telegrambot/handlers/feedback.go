@@ -38,7 +38,6 @@ func (f *FeedbackHandler) GetReplyPatterns() []string {
 func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *models.Update) {
 	feedbackText := update.Message.Text
 
-	// Send thank you message to user
 	if _, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
 		Text:      thankYouText,
@@ -47,12 +46,11 @@ func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *m
 		f.log.Error("Failed to send thank you message for feedback: ", err)
 	}
 
-	// Forward feedback to admin anonymously
 	adminMessage := fmt.Sprintf(feedbackAdminTemplate, feedbackText)
 	if err := f.telegramNotifier.SendMessage(f.adminChatID, adminMessage); err != nil {
 		f.log.Error("Failed to forward feedback to admin: ", err)
 	} else {
-		f.log.Info("Feedback forwarded to admin successfully")
+		f.log.Debug("Feedback forwarded to admin successfully")
 	}
 }
 

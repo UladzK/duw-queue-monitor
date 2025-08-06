@@ -23,6 +23,7 @@ func (p *Profile) SetProfile(ctx context.Context) error {
 		Commands: p.registry.GetAvailableCommands(),
 	}); err != nil {
 		p.logger.Error("Failed to set bot commands: ", err)
+
 		return fmt.Errorf("failed to set bot commands: %w", err)
 	}
 

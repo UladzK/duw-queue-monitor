@@ -96,6 +96,6 @@ func (d *DefaultHandler) sendDefaultMenu(ctx context.Context, b *bot.Bot, chatID
 	if err != nil {
 		d.log.Error("Failed to send menu message: ", err)
 	} else {
-		d.log.Info("Menu message sent to user: " + msg.Text)
+		d.log.Debug("Menu message sent to user: " + msg.Text)
 	}
 }
