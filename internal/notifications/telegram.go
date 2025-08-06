@@ -61,8 +61,8 @@ func (s *TelegramNotifier) SendMessage(chatID, text string) error {
 	return nil
 }
 
-func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
-	channelName := fmt.Sprintf("@%s", s.cfg.BroadcastChannelName)
+func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannelName, queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
+	channelName := fmt.Sprintf("@%s", broadcastChannelName)
 	message := buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft)
 	
 	if err := s.SendMessage(channelName, message); err != nil {

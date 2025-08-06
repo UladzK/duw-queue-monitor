@@ -5,5 +5,5 @@ type Notifier interface {
 
 	// SendGeneralQueueStatusUpdateNotification sends a general notification about availability of the queue.
 	// It includes the queue name, whether the queue is enabled, the actual ticket number and the number of tickets left.
-	SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error
+	SendGeneralQueueStatusUpdateNotification(broadcastChannelName, queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error
 }

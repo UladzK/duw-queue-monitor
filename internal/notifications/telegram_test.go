@@ -72,9 +72,8 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 			defer mockPushOverApi.Close()
 
 			cfg := &TelegramConfig{
-				BaseApiUrl:           mockPushOverApi.URL,
-				BotToken:             testBotToken,
-				BroadcastChannelName: testChannel,
+				BaseApiUrl: mockPushOverApi.URL,
+				BotToken:   testBotToken,
 			}
 
 			logger := logger.NewLogger(&logger.Config{
@@ -83,7 +82,7 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 			sut := NewTelegramNotifier(cfg, logger, &http.Client{})
 
 			// Act
-			err := sut.SendGeneralQueueStatusUpdateNotification(tc.queueName, true, tc.queueEnabled, tc.actualTicket, tc.numberOfTicketsLeft)
+			err := sut.SendGeneralQueueStatusUpdateNotification(testChannel, tc.queueName, true, tc.queueEnabled, tc.actualTicket, tc.numberOfTicketsLeft)
 
 			// Assert
 			if err != nil {

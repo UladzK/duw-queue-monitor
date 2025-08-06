@@ -23,7 +23,7 @@ func NewPushOverNotifier(cfg *PushOverConfig, log *logger.Logger, httpClient *ht
 	}
 }
 
-func (s *PushOverNotifier) SendGeneralQueueStatusUpdateNotification(queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
+func (s *PushOverNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannelName, queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
 	req := url.Values{}
 	req.Set("token", s.cfg.Token)
 	req.Set("user", s.cfg.User)
