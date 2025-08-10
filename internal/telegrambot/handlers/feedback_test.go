@@ -22,11 +22,11 @@ func (m *mockTelegramNotifier) SendMessage(chatID, message string) error {
 	m.sendMessageCalled = true
 	m.lastSentChatID = chatID
 	m.lastSentMessage = message
-	
+
 	if m.shouldFail {
 		return fmt.Errorf("failed to send message")
 	}
-	
+
 	return nil
 }
 
@@ -63,7 +63,7 @@ func TestFeedbackHandler_GetReplyPatterns_ReturnsCorrectPattern(t *testing.T) {
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
 	mockNotifier := createMockTelegramNotifier(false)
 	adminChatID := "admin123"
-	
+
 	sut := NewFeedbackHandler(logger, mockNotifier, adminChatID)
 
 	// Act
@@ -78,7 +78,7 @@ func TestFeedbackHandler_GetReplyPatterns_ReturnsCorrectPattern(t *testing.T) {
 func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t *testing.T) {
 	// Arrange
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
-	
+
 	// Create mock HTTP server to capture admin notification
 	var capturedAdminRequest *http.Request
 	var capturedAdminBody string
@@ -97,7 +97,7 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 		BotToken:   "test-token",
 	}
 	mockNotifier := notifications.NewTelegramNotifier(cfg, logger, &http.Client{})
-	
+
 	adminChatID := "admin123"
 	feedbackText := "This is user feedback about the bot"
 
@@ -109,15 +109,15 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 	if err != nil {
 		t.Errorf("Expected no error when sending admin notification, got: %v", err)
 	}
-	
+
 	if capturedAdminRequest == nil {
 		t.Error("Expected admin notification to be sent")
 	}
-	
+
 	if capturedAdminBody == "" {
 		t.Error("Expected admin message body to be captured")
 	}
-	
+
 	expectedAdminMessage := "💬 <b>Nowa opinia od użytkownika</b>\n\n📝 Treść:\nThis is user feedback about the bot"
 	if capturedAdminBody != "" {
 		// The body will contain JSON, we just verify the call was made
@@ -125,7 +125,7 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 			t.Errorf("Expected POST request for admin notification, got %s", capturedAdminRequest.Method)
 		}
 	}
-	
+
 	// Test that the message format is correct
 	actualAdminMessage := fmt.Sprintf(feedbackAdminTemplate, feedbackText)
 	if actualAdminMessage != expectedAdminMessage {
@@ -137,7 +137,7 @@ func TestFeedbackHandler_HandleReply_WhenAdminNotificationFails_HandlesError(t *
 	// Arrange
 	mockNotifier := createMockTelegramNotifier(true) // This will fail
 	adminChatID := "admin123"
-	
+
 	feedbackText := "This is user feedback"
 	adminMessage := fmt.Sprintf(feedbackAdminTemplate, feedbackText)
 
