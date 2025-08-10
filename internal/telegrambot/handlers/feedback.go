@@ -63,13 +63,16 @@ func (f *FeedbackHandler) Register(b *bot.Bot, replyRegistry ReplyRegistry) {
 }
 
 func (f *FeedbackHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *models.Update) {
-	b.SendMessage(ctx, &bot.SendMessageParams{
+	if _, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
 		Text:      feedbackInfoText,
 		ParseMode: models.ParseModeHTML,
-	})
+	}); err != nil {
+		f.log.Error("Failed to send feedback info message: ", err)
+		return
+	}
 
-	b.SendMessage(ctx, &bot.SendMessageParams{
+	if _, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   feedbackReplyText,
 		ReplyMarkup: &models.ForceReply{
@@ -77,5 +80,7 @@ func (f *FeedbackHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *
 			InputFieldPlaceholder: "Napisz swoją opinię tutaj...",
 			Selective:             true,
 		},
-	})
+	}); err != nil {
+		f.log.Error("Failed to send feedback reply prompt: ", err)
+	}
 }
