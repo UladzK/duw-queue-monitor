@@ -39,7 +39,6 @@ func (m *mockTelegramNotifier) SendGeneralQueueStatusUpdateNotification(broadcas
 }
 
 func createMockTelegramNotifier(shouldFail bool) *notifications.TelegramNotifier {
-	// Create a mock HTTP server to simulate Telegram API
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if shouldFail {
 			http.Error(w, "Server error", http.StatusInternalServerError)
@@ -79,7 +78,6 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 	// Arrange
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
 
-	// Create mock HTTP server to capture admin notification
 	var capturedAdminRequest *http.Request
 	var capturedAdminBody string
 	adminServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +99,7 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 	adminChatID := "admin123"
 	feedbackText := "This is user feedback about the bot"
 
-	// Act - test the admin notification part
+	// Act
 	adminMessage := fmt.Sprintf(feedbackAdminTemplate, feedbackText)
 	err := mockNotifier.SendMessage(adminChatID, adminMessage)
 
@@ -120,13 +118,10 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 
 	expectedAdminMessage := "💬 <b>Nowa opinia od użytkownika</b>\n\n📝 Treść:\nThis is user feedback about the bot"
 	if capturedAdminBody != "" {
-		// The body will contain JSON, we just verify the call was made
 		if capturedAdminRequest.Method != "POST" {
 			t.Errorf("Expected POST request for admin notification, got %s", capturedAdminRequest.Method)
 		}
 	}
-
-	// Test that the message format is correct
 	actualAdminMessage := fmt.Sprintf(feedbackAdminTemplate, feedbackText)
 	if actualAdminMessage != expectedAdminMessage {
 		t.Errorf("Expected admin message:\n%s\nGot:\n%s", expectedAdminMessage, actualAdminMessage)
@@ -151,7 +146,6 @@ func TestFeedbackHandler_HandleReply_WhenAdminNotificationFails_HandlesError(t *
 }
 
 func TestFeedbackHandler_HandleUpdate_MessageFormat_VerifyCorrectTextsAndFormats(t *testing.T) {
-	// Test the message constants and formats used in HandleUpdate
 	testCases := []struct {
 		name           string
 		expectedText   string
