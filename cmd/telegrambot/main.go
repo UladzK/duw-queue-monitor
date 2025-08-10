@@ -17,7 +17,7 @@ import (
 var log *logger.Logger
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	var err error
@@ -42,19 +42,15 @@ func main() {
 	go b.Start(ctx)
 	log.Info("Telegram bot started. Waiting for shutdown signal...")
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-ctx.Done()
 
-	<-sigChan
 	log.Info("Received shutdown signal, stopping Telegram bot...")
-	cancel()
 
 	log.Info("Telegram bot stopped")
 }
 
 func setProfile(ctx context.Context, b *bot.Bot, registry *telegrambot.HandlerRegistry) error {
 	profile := telegrambot.NewProfile(b, registry, log)
-	// TODO: setting profile commands fails intermittently with the error "context canceled", investigate and fix
 	if err := profile.SetProfile(ctx); err != nil {
 		return err
 	}
