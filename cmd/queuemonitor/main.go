@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	log, err := buildLogger()
@@ -32,13 +32,11 @@ func main() {
 	log.Info("Starting queue monitor...")
 
 	done := make(chan bool, 1)
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go runner.Run(ctx, done)
 
 	log.Info("Queue monitor started. Waiting for shutdown signal...")
-	<-sigChan
-	log.Info("Received shutdown signal, stopping status collector...")
+	<-ctx.Done()
+	log.Info("Received shutdown signal, waiting for status collector to stop...")
 	cancel()
 	<-done
 
