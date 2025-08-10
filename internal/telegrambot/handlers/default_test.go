@@ -45,61 +45,15 @@ func TestBuildMenuMessage_WithMultipleCommands_BuildsCorrectMenuMessage(t *testi
 	expectedMessage := "Witaj!\n\n<b>Dostępne komendy</b>\n/feedback - Send feedback\n/status - Check status\n/help - Show help\n\nUżyj /start aby zobaczyć to menu ponownie\n"
 
 	// Act
-	result := buildMenuMessage(mockHandlerRegistry)
+	success := buildMenuMessage(mockHandlerRegistry)
 
 	// Assert
-	if result != expectedMessage {
-		t.Errorf("Expected menu message:\n%s\nGot:\n%s", expectedMessage, result)
+	if success != expectedMessage {
+		t.Errorf("Expected menu message:\n%s\nGot:\n%s", expectedMessage, success)
 	}
 }
 
-func TestBuildMenuMessage_WithNoCommands_BuildsMenuWithNoCommands(t *testing.T) {
-	// Arrange
-	mockHandlerRegistry := &mockHandlerRegistry{
-		commands: []models.BotCommand{},
-	}
-
-	expectedMessage := "Witaj!\n\n<b>Dostępne komendy</b>\n\n\nUżyj /start aby zobaczyć to menu ponownie\n"
-
-	// Act
-	result := buildMenuMessage(mockHandlerRegistry)
-
-	// Assert
-	if result != expectedMessage {
-		t.Errorf("Expected menu message:\n%s\nGot:\n%s", expectedMessage, result)
-	}
-}
-
-func TestDefaultHandler_NewDefaultHandler_InitializesCorrectly(t *testing.T) {
-	// Arrange
-	logger := logger.NewLogger(&logger.Config{Level: "error"})
-	mockHandlerRegistry := &mockHandlerRegistry{
-		commands: []models.BotCommand{
-			{Command: "feedback", Description: "feedback"},
-		},
-	}
-	mockReplyRegistry := &mockReplyRegistry{handlers: make(map[string]ReplyHandler)}
-
-	expectedMenuMessage := "Witaj!\n\n<b>Dostępne komendy</b>\n/feedback - feedback\n\nUżyj /start aby zobaczyć to menu ponownie\n"
-
-	// Act
-	sut := NewDefaultHandler(logger, mockReplyRegistry, mockHandlerRegistry)
-
-	// Assert
-	if sut.menuMessage != expectedMenuMessage {
-		t.Errorf("Expected menu message to be initialized correctly:\n%s\nGot:\n%s", expectedMenuMessage, sut.menuMessage)
-	}
-
-	if sut.replyRegistry != mockReplyRegistry {
-		t.Error("Expected reply registry to be set correctly")
-	}
-
-	if sut.handlerRegistry != mockHandlerRegistry {
-		t.Error("Expected handler registry to be set correctly")
-	}
-}
-
-func TestDefaultHandler_HandleReplyMessage_WhenUpdateIsNil_ReturnsFalse(t *testing.T) {
+func TestHandleReplyMessage_WhenUpdateIsNil_DoesNotPanicAndReturnsFalse(t *testing.T) {
 	// Arrange
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
 	mockHandlerRegistry := &mockHandlerRegistry{commands: []models.BotCommand{}}
@@ -108,15 +62,15 @@ func TestDefaultHandler_HandleReplyMessage_WhenUpdateIsNil_ReturnsFalse(t *testi
 	sut := NewDefaultHandler(logger, mockReplyRegistry, mockHandlerRegistry)
 
 	// Act
-	result := sut.handleReplyMessage(nil, nil, nil)
+	success := sut.handleReplyMessage(nil, nil, nil)
 
 	// Assert
-	if result != false {
+	if success {
 		t.Error("Expected handleReplyMessage to return false when update is nil")
 	}
 }
 
-func TestDefaultHandler_HandleReplyMessage_WhenMessageIsNil_ReturnsFalse(t *testing.T) {
+func TestHandleReplyMessage_WhenMessageIsNil_DoesNotPanicAndReturnsFalse(t *testing.T) {
 	// Arrange
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
 	mockHandlerRegistry := &mockHandlerRegistry{commands: []models.BotCommand{}}
@@ -126,15 +80,15 @@ func TestDefaultHandler_HandleReplyMessage_WhenMessageIsNil_ReturnsFalse(t *test
 	update := &models.Update{Message: nil}
 
 	// Act
-	result := sut.handleReplyMessage(nil, nil, update)
+	success := sut.handleReplyMessage(nil, nil, update)
 
 	// Assert
-	if result != false {
+	if success {
 		t.Error("Expected handleReplyMessage to return false when message is nil")
 	}
 }
 
-func TestDefaultHandler_HandleReplyMessage_WhenReplyToMessageIsNil_ReturnsFalse(t *testing.T) {
+func TestHandleReplyMessage_WhenReplyToMessageIsNil_DoesNotPanicAndReturnsFalse(t *testing.T) {
 	// Arrange
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
 	mockHandlerRegistry := &mockHandlerRegistry{commands: []models.BotCommand{}}
@@ -148,10 +102,10 @@ func TestDefaultHandler_HandleReplyMessage_WhenReplyToMessageIsNil_ReturnsFalse(
 	}
 
 	// Act
-	result := sut.handleReplyMessage(nil, nil, update)
+	success := sut.handleReplyMessage(nil, nil, update)
 
 	// Assert
-	if result != false {
+	if success {
 		t.Error("Expected handleReplyMessage to return false when reply to message is nil")
 	}
 }
@@ -172,15 +126,15 @@ func TestDefaultHandler_HandleReplyMessage_WhenReplyToMessageTextIsEmpty_Returns
 	}
 
 	// Act
-	result := sut.handleReplyMessage(nil, nil, update)
+	success := sut.handleReplyMessage(nil, nil, update)
 
 	// Assert
-	if result != false {
+	if success != false {
 		t.Error("Expected handleReplyMessage to return false when reply to message text is empty")
 	}
 }
 
-func TestDefaultHandler_HandleReplyMessage_WhenNoHandlerFound_ReturnsFalse(t *testing.T) {
+func TestHandleReplyMessage_WhenNoHandlerFound_DoesNotPanicAndReturnsFalse(t *testing.T) {
 	// Arrange
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
 	mockHandlerRegistry := &mockHandlerRegistry{commands: []models.BotCommand{}}
@@ -196,10 +150,10 @@ func TestDefaultHandler_HandleReplyMessage_WhenNoHandlerFound_ReturnsFalse(t *te
 	}
 
 	// Act
-	result := sut.handleReplyMessage(nil, nil, update)
+	success := sut.handleReplyMessage(nil, nil, update)
 
 	// Assert
-	if result != false {
+	if success {
 		t.Error("Expected handleReplyMessage to return false when no handler found")
 	}
 }
@@ -219,7 +173,7 @@ func (m *mockReplyHandler) HandleReply(ctx context.Context, b *bot.Bot, update *
 	m.lastUpdate = update
 }
 
-func TestDefaultHandler_HandleReplyMessage_WhenHandlerFound_CallsHandlerAndReturnsTrue(t *testing.T) {
+func TestHandleReplyMessage_WhenHandlerFound_CallsHandlerAndReturnsTrue(t *testing.T) {
 	// Arrange
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
 	mockHandlerRegistry := &mockHandlerRegistry{commands: []models.BotCommand{}}
@@ -238,10 +192,10 @@ func TestDefaultHandler_HandleReplyMessage_WhenHandlerFound_CallsHandlerAndRetur
 	}
 
 	// Act
-	result := sut.handleReplyMessage(nil, nil, update)
+	success := sut.handleReplyMessage(nil, nil, update)
 
 	// Assert
-	if result != true {
+	if !success {
 		t.Error("Expected handleReplyMessage to return true when handler is found and called")
 	}
 

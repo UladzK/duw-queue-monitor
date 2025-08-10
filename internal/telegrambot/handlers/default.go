@@ -68,6 +68,7 @@ func (d *DefaultHandler) HandleUpdate(ctx context.Context, b *bot.Bot, update *m
 }
 
 func (d *DefaultHandler) handleReplyMessage(ctx context.Context, b *bot.Bot, update *models.Update) bool {
+	// sometimes updates contain nil message. they are handled specially to avoid panics
 	if update == nil || update.Message == nil || update.Message.ReplyToMessage == nil || update.Message.ReplyToMessage.Text == "" {
 		return false
 	}

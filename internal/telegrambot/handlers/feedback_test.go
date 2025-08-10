@@ -9,35 +9,6 @@ import (
 	"uladzk/duw_kolejka_checker/internal/notifications"
 )
 
-type mockTelegramNotifier struct {
-	shouldFail        bool
-	called            bool
-	lastSentChatID    string
-	lastSentMessage   string
-	sendMessageCalled bool
-}
-
-func (m *mockTelegramNotifier) SendMessage(chatID, message string) error {
-	m.called = true
-	m.sendMessageCalled = true
-	m.lastSentChatID = chatID
-	m.lastSentMessage = message
-
-	if m.shouldFail {
-		return fmt.Errorf("failed to send message")
-	}
-
-	return nil
-}
-
-func (m *mockTelegramNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannelName, queueName string, active bool, enabled bool, actualTicket string, numberOfTicketsLeft int) error {
-	m.called = true
-	if m.shouldFail {
-		return fmt.Errorf("failed to send notification")
-	}
-	return nil
-}
-
 func createMockTelegramNotifier(shouldFail bool) *notifications.TelegramNotifier {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if shouldFail {
