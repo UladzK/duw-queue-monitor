@@ -50,7 +50,7 @@ func (f *FeedbackHandler) HandleReply(ctx context.Context, b *bot.Bot, update *m
 	if err := f.telegramNotifier.SendMessage(f.adminChatID, adminMessage); err != nil {
 		f.log.Error("Failed to forward feedback to admin: ", err)
 	} else {
-		f.log.Debug("Feedback forwarded to admin successfully")
+		f.log.Info("Feedback forwarded to feedback chat successfully")
 	}
 }
 
