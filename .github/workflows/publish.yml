@@ -1,3 +1,4 @@
+# Add validation for version: use regex for semantic versioning
 name: Publish workflow
 on:
   workflow_dispatch:
