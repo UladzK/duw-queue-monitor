@@ -4,7 +4,7 @@ on:
     inputs:
       service:
         type: choice
-        options: [queue-monitor]
+        options: [queue-monitor, telegram-bot]
         description: 'Name of the service to publish'
         required: true
       version:
