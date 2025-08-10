@@ -17,7 +17,7 @@ spec:
         app: telegram-bot
     spec:
       containers:
-      - image: acrduwshared.azurecr.io/telegram-bot:0.1.0
+      - image: acrduwshared.azurecr.io/telegram-bot:1.0.0
         name: telegram-bot
         env:
         - name: LOG_LEVEL
@@ -37,7 +37,7 @@ spec:
         resources:
           requests:
             cpu: 100m
-            memory: 128Mi
+            memory: 64Mi
           limits:
             cpu: 100m
             memory: 128Mi
