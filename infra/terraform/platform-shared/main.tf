@@ -87,3 +87,5 @@ resource "azurerm_storage_container" "sc_tfstate" {
   storage_account_id    = azurerm_storage_account.sa_tfstate.id
   container_access_type = "private"
 }
+
+//TODO: manage infisical secrets in terraform

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: telegram-bot
+  name: telegram-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telegram-bot
+  strategy:
+    type: Recreate # it ensures that bot updates will not be processed during the same status updates in parallel when the deployment is updated
+  template:
+    metadata:
+      labels:
+        app: telegram-bot
+    spec:
+      containers:
+      - image: acrduwshared.azurecr.io/telegram-bot:0.1.0
+        name: telegram-bot
+        env:
+        - name: LOG_LEVEL
+          value: "info"
+        - name: USE_TELEGRAM_NOTIFICATIONS
+          value: "true"
+        - name: NOTIFICATION_TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: telegram-bot-external-secret
+              key: NOTIFICATION_TELEGRAM_BOT_TOKEN
+        - name: NOTIFICATION_TELEGRAM_FEEDBACK_CHAT_ID
+          valueFrom:
+            secretKeyRef:
+              name: telegram-bot-external-secret
+              key: NOTIFICATION_TELEGRAM_FEEDBACK_CHAT_ID
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
