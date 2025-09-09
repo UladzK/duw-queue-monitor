@@ -6,7 +6,6 @@ type Config struct {
 	StatusCheckInternalSeconds int    `env:"STATUS_CHECK_INTERVAL_SECONDS" envDefault:"10"`
 	BroadcastChannelName       string `env:"NOTIFICATION_TELEGRAM_BROADCAST_CHANNEL_NAME,required"`
 	QueueMonitor               QueueMonitorConfig
-	NotificationPushOver       notifications.PushOverConfig
 	NotificationTelegram       notifications.TelegramConfig
 }
 

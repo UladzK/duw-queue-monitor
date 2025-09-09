@@ -30,7 +30,6 @@ func initDevContainer(ctx context.Context, t *testing.T) testcontainers.Containe
 	return redisC
 }
 
-// TODO: add env vars to split up running unit and integration tests
 func TestGetAndSave_WhenRedisIsAvailable_GetsAndSavesState(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
