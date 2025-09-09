@@ -83,9 +83,5 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 }
 
 func buildNotifier(cfg *queuemonitor.Config, log *logger.Logger, httpClient *http.Client) queuemonitor.Notifier {
-	if cfg.UseTelegramNotifications {
-		return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
-	}
-
-	return notifications.NewPushOverNotifier(&cfg.NotificationPushOver, log, httpClient)
+	return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
 }
