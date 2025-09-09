@@ -22,24 +22,16 @@ type Response struct {
 
 // Queue represents a queue state retrieved from the DUW API
 type Queue struct {
-	ID                 int    `json:"id"`
-	Name               string `json:"name"`
-	TicketCount        int    `json:"ticket_count"`
-	TicketsServed      int    `json:"tickets_served"`
-	Workplaces         int    `json:"workplaces"`
-	AverageWaitTime    int    `json:"average_wait_time"`
-	AverageServiceTime int    `json:"average_service_time"`
-	RegisteredTickets  int    `json:"registered_tickets"`
-	MaxTickets         int    `json:"max_tickets"`
-	TicketValue        string `json:"ticket_value"`
-	Active             bool   `json:"active"`
-	Location           string `json:"location"`
-	TicketsLeft        int    `json:"tickets_left"`
-	Enabled            bool   `json:"enabled"`
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Enabled     bool   `json:"enabled"`
+	Active      bool   `json:"active"`
+	TicketValue string `json:"ticket_value"`
+	TicketsLeft int    `json:"tickets_left"`
 }
 
+// TODO: product improvement: support multiple queues and cities by passing them in the config
 const (
-	// TODO: using this pre-defined int Id can be a problem. what if it rotates? also check for queue name for extra safety
 	odbiorKartyQueueId = 24        // ID of the queue we are interested in
 	wroclawCityName    = "Wrocław" // City name for the queue we are interested in
 )
