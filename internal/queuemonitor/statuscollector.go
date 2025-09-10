@@ -1,10 +1,14 @@
 package queuemonitor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/avast/retry-go/v4"
 )
 
 // StatusCollector is responsible for collecting the status of a specific queue from the DUW API
@@ -51,30 +55,9 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 
 	req.Header.Set("User-Agent", "") // needed because otherwise DUW's API does not return data
 
-	//TODO: add retries with exponential backoff. including non-OK status codes
-	resp, err := s.httpClient.Do(req)
+	response, err := s.getStatusWithRetries(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errRespBody, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			errRespBody = []byte(fmt.Sprintf("failed to read response body: %v", readErr))
-		}
-
-		return nil, fmt.Errorf("failed to get queue status, status code: %d. response: %v", resp.StatusCode, string(errRespBody))
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: \"%w\"", err)
-	}
-
-	var response Response
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse response body: \"%w\". body text: %v", err, string(body))
+		return nil, fmt.Errorf("failed to get queue status after retries: %w", err)
 	}
 
 	for _, queue := range response.Result[wroclawCityName] {
@@ -84,4 +67,39 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 	}
 
 	return nil, fmt.Errorf("failed to find the queue status for the queue with id: %v", odbiorKartyQueueId)
+}
+
+func (s *StatusCollector) getStatusWithRetries(req *http.Request) (*Response, error) {
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 4*time.Second) // configure
+	defer cancel()
+
+	return retry.DoWithData(
+		func() (*Response, error) {
+			resp, err := s.httpClient.Do(req)
+			if err != nil {
+				return nil, err
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			}
+
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read response body: \"%w\"", err)
+			}
+
+			var response Response
+			if err := json.Unmarshal(body, &response); err != nil {
+				return nil, fmt.Errorf("failed to parse response body: \"%w\". body text: %v", err, string(body))
+			}
+
+			return &response, nil
+		},
+		retry.Attempts(3),                 // configure
+		retry.Delay(500*time.Millisecond), // configure
+		retry.DelayType(retry.BackOffDelay),
+		retry.Context(timeoutCtx),
+	)
 }
