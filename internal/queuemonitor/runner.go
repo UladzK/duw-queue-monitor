@@ -74,8 +74,7 @@ func (h *Runner) saveMonitorState(ctx context.Context) {
 		return
 	}
 
-	// todo: ideally, there should timeout for saving state, but it is not critical. Redis in-cluster is super reliable.
-	saveCtx := context.WithoutCancel(ctx)
+	saveCtx := context.WithoutCancel(ctx) // ideally, there should timeout for saving state, but it is not critical. Redis in-cluster is super reliable.
 
 	if err := h.stateRepo.Save(saveCtx, latestState); err != nil {
 		h.log.Error("Failed to save monitor state to Redis", err)

@@ -35,9 +35,8 @@ func NewMonitorStateRepository(redisClient *redis.Client, stateTtlSeconds int) *
 	}
 }
 
-// TODO: add retries
 func (r *MonitorStateRepository) Get(ctx context.Context) (*MonitorState, error) {
-	stateData, err := r.redisClient.Get(ctx, queueStateRedisKey).Result()
+	stateData, err := r.redisClient.Get(ctx, queueStateRedisKey).Result() // ideally, there should be retry but Redis in-cluster is super reliable so skipping it for now
 
 	switch {
 	case err == redis.Nil:
@@ -60,7 +59,7 @@ func (r *MonitorStateRepository) Save(ctx context.Context, state *MonitorState) 
 		return fmt.Errorf("failed to marshal monitor state: \"%w\"", err)
 	}
 
-	if err := r.redisClient.Set(ctx, queueStateRedisKey, stateData, r.stateTtl).Err(); err != nil {
+	if err := r.redisClient.Set(ctx, queueStateRedisKey, stateData, r.stateTtl).Err(); err != nil { // ideally, there should be retry but Redis in-cluster is super reliable so skipping it for now
 		return fmt.Errorf("failed to save monitor state to Redis: \"%w\"", err)
 	}
 

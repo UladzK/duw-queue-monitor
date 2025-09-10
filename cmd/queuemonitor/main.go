@@ -61,6 +61,7 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
+			//TODO: check again if this is still needed
 			// needed because otherwise the TLS connection is not established when calling from inside the container. silly workaround which just works
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
@@ -83,9 +84,5 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 }
 
 func buildNotifier(cfg *queuemonitor.Config, log *logger.Logger, httpClient *http.Client) queuemonitor.Notifier {
-	if cfg.UseTelegramNotifications {
-		return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
-	}
-
-	return notifications.NewPushOverNotifier(&cfg.NotificationPushOver, log, httpClient)
+	return notifications.NewTelegramNotifier(&cfg.NotificationTelegram, log, httpClient)
 }
