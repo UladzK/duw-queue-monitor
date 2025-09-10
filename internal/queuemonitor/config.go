@@ -10,7 +10,10 @@ type Config struct {
 }
 
 type QueueMonitorConfig struct {
-	StatusApiUrl    string `env:"STATUS_API_URL" envDefault:"https://rezerwacje.duw.pl/status_kolejek/query.php?status="`
-	RedisConString  string `env:"STATE_REDIS_CONNECTION_STRING,required"`
-	StateTtlSeconds int    `env:"STATE_TTL_SECONDS" envDefault:"60"`
+	StatusApiUrl              string `env:"STATUS_API_URL" envDefault:"https://rezerwacje.duw.pl/status_kolejek/query.php?status="`
+	StatusCheckTimeoutMs      uint   `env:"STATUS_CHECK_TIMEOUT_MS" envDefault:"4000"`
+	StatusCheckMaxAttempts    uint   `env:"STATUS_CHECK_MAX_ATTEMPTS" envDefault:"3"`
+	StatusCheckAttemptDelayMs uint   `env:"STATUS_CHECK_ATTEMPT_DELAY_MS" envDefault:"500"`
+	RedisConString            string `env:"STATE_REDIS_CONNECTION_STRING,required"`
+	StateTtlSeconds           int    `env:"STATE_TTL_SECONDS" envDefault:"60"`
 }

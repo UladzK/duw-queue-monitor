@@ -70,7 +70,7 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 }
 
 func (s *StatusCollector) getStatusWithRetries(req *http.Request) (*Response, error) {
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), 4*time.Second) // configure
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Duration(s.cfg.StatusCheckTimeoutMs)*time.Millisecond)
 	defer cancel()
 
 	return retry.DoWithData(
@@ -97,9 +97,9 @@ func (s *StatusCollector) getStatusWithRetries(req *http.Request) (*Response, er
 
 			return &response, nil
 		},
-		retry.Attempts(3),                 // configure
-		retry.Delay(500*time.Millisecond), // configure
-		retry.DelayType(retry.BackOffDelay),
+		retry.Attempts(s.cfg.StatusCheckMaxAttempts),
+		retry.Delay(time.Duration(s.cfg.StatusCheckAttemptDelayMs)*time.Millisecond),
+		retry.DelayType(retry.FixedDelay),
 		retry.Context(timeoutCtx),
 	)
 }
