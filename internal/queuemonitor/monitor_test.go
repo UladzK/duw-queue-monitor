@@ -81,7 +81,10 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 
 			cfg := &Config{
 				QueueMonitor: QueueMonitorConfig{
-					StatusApiUrl: mockDuwApi.URL,
+					StatusApiUrl:              mockDuwApi.URL,
+					StatusCheckTimeoutMs:      4000,
+					StatusCheckMaxAttempts:    3,
+					StatusCheckAttemptDelayMs: 500,
 				},
 			}
 
@@ -208,7 +211,10 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 
 			cfg := &Config{
 				QueueMonitor: QueueMonitorConfig{
-					StatusApiUrl: mockDuwApi.URL,
+					StatusApiUrl:              mockDuwApi.URL,
+					StatusCheckTimeoutMs:      4000,
+					StatusCheckMaxAttempts:    3,
+					StatusCheckAttemptDelayMs: 500,
 				},
 			}
 
@@ -259,7 +265,10 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 
 	cfg := &Config{
 		QueueMonitor: QueueMonitorConfig{
-			StatusApiUrl: mockDuwApi.URL,
+			StatusApiUrl:              mockDuwApi.URL,
+			StatusCheckTimeoutMs:      4000,
+			StatusCheckMaxAttempts:    3,
+			StatusCheckAttemptDelayMs: 500,
 		},
 	}
 
@@ -310,7 +319,10 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 
 	cfg := &Config{
 		QueueMonitor: QueueMonitorConfig{
-			StatusApiUrl: mockDuwApi.URL,
+			StatusApiUrl:              mockDuwApi.URL,
+			StatusCheckTimeoutMs:      4000,
+			StatusCheckMaxAttempts:    3,
+			StatusCheckAttemptDelayMs: 500,
 		},
 	}
 

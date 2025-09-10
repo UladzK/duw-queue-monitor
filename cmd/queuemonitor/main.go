@@ -61,6 +61,7 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
+			//TODO: check again if this is still needed
 			// needed because otherwise the TLS connection is not established when calling from inside the container. silly workaround which just works
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
