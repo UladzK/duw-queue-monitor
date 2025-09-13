@@ -20,8 +20,11 @@ func createMockTelegramNotifier(shouldFail bool) *notifications.TelegramNotifier
 	}))
 
 	cfg := &notifications.TelegramConfig{
-		BaseApiUrl: server.URL,
-		BotToken:   "test-token",
+		BaseApiUrl:            server.URL,
+		BotToken:              "test-token",
+		MaxRetryAttempts:      1,
+		RetryDelayMs:          500,
+		RequestTimeoutSeconds: 2,
 	}
 
 	logger := logger.NewLogger(&logger.Config{Level: "error"})
@@ -62,8 +65,11 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 	defer adminServer.Close()
 
 	cfg := &notifications.TelegramConfig{
-		BaseApiUrl: adminServer.URL,
-		BotToken:   "test-token",
+		BaseApiUrl:            adminServer.URL,
+		BotToken:              "test-token",
+		MaxRetryAttempts:      1,
+		RetryDelayMs:          500,
+		RequestTimeoutSeconds: 2,
 	}
 	mockNotifier := notifications.NewTelegramNotifier(cfg, logger, &http.Client{})
 
