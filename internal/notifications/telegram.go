@@ -13,13 +13,6 @@ import (
 	"github.com/avast/retry-go/v4"
 )
 
-// Hard-coded retry configuration constants
-const (
-	telegramMaxRetryAttempts = 3                    // Maximum number of retry attempts
-	telegramRetryDelay       = 1000 * time.Millisecond // Delay between retries
-	telegramRequestTimeout   = 30 * time.Second     // Total timeout for all retry attempts
-)
-
 type TelegramNotifier struct {
 	cfg        *TelegramConfig
 	log        *logger.Logger
@@ -53,8 +46,11 @@ func (s *TelegramNotifier) SendMessage(chatID, text string) error {
 }
 
 func (s *TelegramNotifier) sendMessageWithRetries(url string, reqBody SendMessageChannelRequest) error {
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), telegramRequestTimeout)
+	requestTimeout := time.Duration(s.cfg.RequestTimeoutSeconds) * time.Second
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
+
+	retryDelay := time.Duration(s.cfg.RetryDelayMs) * time.Millisecond
 
 	return retry.Do(
 		func() error {
@@ -81,8 +77,8 @@ func (s *TelegramNotifier) sendMessageWithRetries(url string, reqBody SendMessag
 			s.log.Info("Message sent successfully to TelegramApi.")
 			return nil
 		},
-		retry.Attempts(telegramMaxRetryAttempts),
-		retry.Delay(telegramRetryDelay),
+		retry.Attempts(s.cfg.MaxRetryAttempts),
+		retry.Delay(retryDelay),
 		retry.DelayType(retry.FixedDelay),
 		retry.Context(timeoutCtx),
 	)
