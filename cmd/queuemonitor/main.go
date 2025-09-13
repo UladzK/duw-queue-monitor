@@ -53,7 +53,6 @@ func buildLogger() (*logger.Logger, error) {
 
 func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 	var cfg queuemonitor.Config
-	// TODO: implement Load() method in Configs
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err
 	}
