@@ -41,11 +41,11 @@ func (f *mockNotifier) SendMessage(chatID, text string) error {
 	f.sendMessageCalled = true
 	f.lastSentChatID = chatID
 	f.lastSentMessage = text
-	
+
 	if f.shouldFail {
 		return fmt.Errorf("failed to send message")
 	}
-	
+
 	return nil
 }
 
@@ -101,6 +101,8 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 					StatusCheckTimeoutMs:      4000,
 					StatusCheckMaxAttempts:    3,
 					StatusCheckAttemptDelayMs: 500,
+					StatusMonitoredQueueId:    24,
+					StatusMonitoredQueueCity:  "Wrocław",
 				},
 			}
 
@@ -230,6 +232,8 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 					StatusCheckTimeoutMs:      4000,
 					StatusCheckMaxAttempts:    3,
 					StatusCheckAttemptDelayMs: 500,
+					StatusMonitoredQueueId:    24,
+					StatusMonitoredQueueCity:  "Wrocław",
 				},
 			}
 
@@ -283,6 +287,8 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 			StatusCheckTimeoutMs:      4000,
 			StatusCheckMaxAttempts:    3,
 			StatusCheckAttemptDelayMs: 500,
+			StatusMonitoredQueueId:    24,
+			StatusMonitoredQueueCity:  "Wrocław",
 		},
 	}
 
@@ -337,6 +343,8 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 			StatusCheckTimeoutMs:      4000,
 			StatusCheckMaxAttempts:    3,
 			StatusCheckAttemptDelayMs: 500,
+			StatusMonitoredQueueId:    24,
+			StatusMonitoredQueueCity:  "Wrocław",
 		},
 	}
 
@@ -368,38 +376,38 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing.T) {
 	// Arrange
 	testConditions := []struct {
-		name                     string
-		queueEnabled             bool
-		queueName                string
-		actualTicket             string
-		numberOfTicketsLeft      int
-		expectedMessage          string
-		expectedChatID           string
+		name                string
+		queueEnabled        bool
+		queueName           string
+		actualTicket        string
+		numberOfTicketsLeft int
+		expectedMessage     string
+		expectedChatID      string
 	}{
 		{
-			"Available queue with ticket", 
-			true, 
-			"test-queue", 
-			"K80", 
-			10, 
+			"Available queue with ticket",
+			true,
+			"test-queue",
+			"K80",
+			10,
 			"🔔 Kolejka <b>test-queue</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>K80</b>\n🧾 Pozostało biletów: <b>10</b>",
 			"@test-channel",
 		},
 		{
-			"Unavailable queue", 
-			false, 
-			"test-queue", 
-			"K80", 
-			10, 
+			"Unavailable queue",
+			false,
+			"test-queue",
+			"K80",
+			10,
 			"💤 Kolejka <b>test-queue</b> jest obecnie niedostępna.",
 			"@test-channel",
 		},
 		{
-			"Available queue without ticket", 
-			true, 
-			"Odbiór karty", 
-			"", 
-			5, 
+			"Available queue without ticket",
+			true,
+			"Odbiór karty",
+			"",
+			5,
 			"🔔 Kolejka <b>Odbiór karty</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>5</b>",
 			"@test-channel",
 		},
@@ -434,6 +442,8 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 					StatusCheckTimeoutMs:      4000,
 					StatusCheckMaxAttempts:    3,
 					StatusCheckAttemptDelayMs: 500,
+					StatusMonitoredQueueId:    24,
+					StatusMonitoredQueueCity:  "Wrocław",
 				},
 			}
 

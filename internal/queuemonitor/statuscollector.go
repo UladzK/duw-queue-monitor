@@ -12,7 +12,6 @@ import (
 )
 
 // StatusCollector is responsible for collecting the status of a specific queue from the DUW API
-// Note: only Wrocław city is supported for now, and only the queue with ID 24 (Odbiór Kart) is supported
 type StatusCollector struct {
 	cfg        *QueueMonitorConfig
 	httpClient *http.Client
@@ -34,12 +33,6 @@ type Queue struct {
 	TicketsLeft int    `json:"tickets_left"`
 }
 
-// TODO: product improvement: support multiple queues and cities by passing them in the config
-const (
-	odbiorKartyQueueId = 24        // ID of the queue we are interested in
-	wroclawCityName    = "Wrocław" // City name for the queue we are interested in
-)
-
 func NewStatusCollector(cfg *QueueMonitorConfig, httpClient *http.Client) *StatusCollector {
 	return &StatusCollector{
 		cfg:        cfg,
@@ -60,13 +53,13 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 		return nil, fmt.Errorf("failed to get queue status after retries: %w", err)
 	}
 
-	for _, queue := range response.Result[wroclawCityName] {
-		if queue.ID == odbiorKartyQueueId {
+	for _, queue := range response.Result[s.cfg.StatusMonitoredQueueCity] {
+		if queue.ID == s.cfg.StatusMonitoredQueueId {
 			return &queue, nil
 		}
 	}
 
-	return nil, fmt.Errorf("failed to find the queue status for the queue with id: %v", odbiorKartyQueueId)
+	return nil, fmt.Errorf("failed to find the queue status for the queue with id: %v", s.cfg.StatusMonitoredQueueId)
 }
 
 func (s *StatusCollector) getStatusWithRetries(req *http.Request) (*Response, error) {

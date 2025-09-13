@@ -10,6 +10,8 @@ type Config struct {
 }
 
 type QueueMonitorConfig struct {
+	StatusMonitoredQueueId    int    `env:"STATUS_MONITORED_QUEUE_ID" envDefault:"24"`
+	StatusMonitoredQueueCity  string `env:"STATUS_MONITORED_QUEUE_CITY" envDefault:"Wrocław"`
 	StatusApiUrl              string `env:"STATUS_API_URL" envDefault:"https://rezerwacje.duw.pl/status_kolejek/query.php?status="`
 	StatusCheckTimeoutMs      uint   `env:"STATUS_CHECK_TIMEOUT_MS" envDefault:"4000"`
 	StatusCheckMaxAttempts    uint   `env:"STATUS_CHECK_MAX_ATTEMPTS" envDefault:"3"`
