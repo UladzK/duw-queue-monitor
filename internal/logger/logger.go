@@ -17,9 +17,8 @@ func NewLogger(cfg *Config) *Logger {
 		Level: cfg.GetLogLevel(),
 	}
 
-	// TODO: add distributed logging with writing both to stdout and to a file. see: https://github.com/samber/slog-multi#broadcast-slogmultifanout
 	handler := slog.NewTextHandler(os.Stdout, opts)
-	// TODO: add standard attributes like "role_name", "role_instance", "version", "environment" etc.
+
 	return &Logger{slog.New(handler)}
 }
 

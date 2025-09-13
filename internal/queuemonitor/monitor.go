@@ -59,9 +59,10 @@ func (h *DefaultQueueMonitor) CheckAndProcessStatus() error {
 	shouldNotifyStatusUpdate := !h.isStateInitialized || h.stateChanged(newState)
 
 	if shouldNotifyStatusUpdate {
-		if err := h.notifier.SendGeneralQueueStatusUpdateNotification(h.cfg.BroadcastChannelName, newState.Name, newState.Active, newState.Enabled,
-			newState.TicketValue, newState.TicketsLeft); err != nil {
-			return fmt.Errorf("error sending queue enabled notifiication: %w", err)
+		channelName := fmt.Sprintf("@%s", h.cfg.BroadcastChannelName)
+		message := buildQueueAvailableMsg(newState.Name, newState.Enabled, newState.TicketValue, newState.TicketsLeft)
+		if err := h.notifier.SendMessage(channelName, message); err != nil {
+			return fmt.Errorf("error sending queue enabled notification: %w", err)
 		}
 	}
 
