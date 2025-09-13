@@ -5,26 +5,6 @@ import (
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
-// Message constants for queue status notifications
-const (
-	msgQueueAvailableGeneral = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>%s</b>\n🧾 Pozostało biletów: <b>%d</b>"
-	msgQueueAvailableShort   = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>%d</b>"
-	msgQueueUnavailable      = "💤 Kolejka <b>%s</b> jest obecnie niedostępna."
-	parseMode                = "HTML"
-)
-
-// buildQueueAvailableMsg creates a formatted message based on queue status
-func buildQueueAvailableMsg(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) string {
-	if !queueEnabled {
-		return fmt.Sprintf(msgQueueUnavailable, queueName)
-	}
-
-	if actualTicket == "" {
-		return fmt.Sprintf(msgQueueAvailableShort, queueName, numberOfTicketsLeft)
-	}
-	return fmt.Sprintf(msgQueueAvailableGeneral, queueName, actualTicket, numberOfTicketsLeft)
-}
-
 // DefaultQueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
 // Essentially, it is a state machine that checks the queue status periodically and notifies about changes.
 // It uses a StatusCollector to get the queue status and a Notifier to send notifications.
