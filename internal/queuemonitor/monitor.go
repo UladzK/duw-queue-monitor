@@ -5,6 +5,26 @@ import (
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
+// Message constants for queue status notifications
+const (
+	msgQueueAvailableGeneral = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>%s</b>\n🧾 Pozostało biletów: <b>%d</b>"
+	msgQueueAvailableShort   = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>%d</b>"
+	msgQueueUnavailable      = "💤 Kolejka <b>%s</b> jest obecnie niedostępna."
+	parseMode                = "HTML"
+)
+
+// buildQueueAvailableMsg creates a formatted message based on queue status
+func buildQueueAvailableMsg(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) string {
+	if !queueEnabled {
+		return fmt.Sprintf(msgQueueUnavailable, queueName)
+	}
+
+	if actualTicket == "" {
+		return fmt.Sprintf(msgQueueAvailableShort, queueName, numberOfTicketsLeft)
+	}
+	return fmt.Sprintf(msgQueueAvailableGeneral, queueName, actualTicket, numberOfTicketsLeft)
+}
+
 // DefaultQueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
 // Essentially, it is a state machine that checks the queue status periodically and notifies about changes.
 // It uses a StatusCollector to get the queue status and a Notifier to send notifications.
@@ -59,9 +79,10 @@ func (h *DefaultQueueMonitor) CheckAndProcessStatus() error {
 	shouldNotifyStatusUpdate := !h.isStateInitialized || h.stateChanged(newState)
 
 	if shouldNotifyStatusUpdate {
-		if err := h.notifier.SendGeneralQueueStatusUpdateNotification(h.cfg.BroadcastChannelName, newState.Name, newState.Active, newState.Enabled,
-			newState.TicketValue, newState.TicketsLeft); err != nil {
-			return fmt.Errorf("error sending queue enabled notifiication: %w", err)
+		channelName := fmt.Sprintf("@%s", h.cfg.BroadcastChannelName)
+		message := buildQueueAvailableMsg(newState.Name, newState.Enabled, newState.TicketValue, newState.TicketsLeft)
+		if err := h.notifier.SendMessage(channelName, message); err != nil {
+			return fmt.Errorf("error sending queue enabled notification: %w", err)
 		}
 	}
 

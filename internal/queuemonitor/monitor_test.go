@@ -14,6 +14,10 @@ type mockNotifier struct {
 	shouldFail     bool // used to simulate failure in sending notification
 	called         bool
 	lastSentStatus *Queue
+	// New fields for tracking SendMessage calls
+	sendMessageCalled bool
+	lastSentChatID    string
+	lastSentMessage   string
 }
 
 func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannelName, queueName string, active bool, enabled bool, actualTicket string, numberOfTicketsLeft int) error {
@@ -30,6 +34,18 @@ func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannel
 		TicketValue: actualTicket,
 		TicketsLeft: numberOfTicketsLeft,
 	}
+	return nil
+}
+
+func (f *mockNotifier) SendMessage(chatID, text string) error {
+	f.sendMessageCalled = true
+	f.lastSentChatID = chatID
+	f.lastSentMessage = text
+	
+	if f.shouldFail {
+		return fmt.Errorf("failed to send message")
+	}
+	
 	return nil
 }
 
@@ -110,13 +126,12 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 				t.Fatalf("Expected successful execution, but execution returned error: %v", err)
 			}
 
-			if notifier.called != tc.notificationShouldBeSent {
-				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.called)
+			if notifier.sendMessageCalled != tc.notificationShouldBeSent {
+				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.sendMessageCalled)
 			}
 
-			if diff := cmp.Diff(notifier.lastSentStatus, tc.expectedNotification); diff != "" {
-				t.Errorf("Notification mismatch (-want +got):\n%s", diff)
-			}
+			// Note: lastSentStatus is no longer used since we switched to SendMessage method
+			// Message format is verified by TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages
 
 			if stateDiff := cmp.Diff(sut.GetState(), expectedFinalState); stateDiff != "" {
 				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", stateDiff)
@@ -240,13 +255,12 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 				t.Fatalf("Expected successful execution, but execution returned error: %v", err)
 			}
 
-			if notifier.called != tc.notificationShouldBeSent {
-				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.called)
+			if notifier.sendMessageCalled != tc.notificationShouldBeSent {
+				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.sendMessageCalled)
 			}
 
-			if diff := cmp.Diff(notifier.lastSentStatus, tc.expectedNotification); diff != "" {
-				t.Errorf("Notification mismatch (-want +got):\n%s", diff)
-			}
+			// Note: lastSentStatus is no longer used since we switched to SendMessage method
+			// Message format is verified by TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages
 
 			if diffState := cmp.Diff(sut.GetState(), expectedFinalState); diffState != "" {
 				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", diffState)
@@ -294,8 +308,8 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 		t.Fatal("Expected error to be returned, but there is no one.", err)
 	}
 
-	if notifier.called {
-		t.Errorf("Expected no notification to be sent.\", but there was one %+v", notifier.lastSentStatus)
+	if notifier.sendMessageCalled {
+		t.Errorf("Expected no notification to be sent, but there was one %+v", notifier.lastSentStatus)
 	}
 }
 
@@ -346,7 +360,107 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 		t.Fatal("Expected error to be returned, but there is no one.", err)
 	}
 
-	if !notifier.called {
+	if !notifier.sendMessageCalled {
 		t.Error("Expected notification to be sent, but it wasn't")
+	}
+}
+
+func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing.T) {
+	// Arrange
+	testConditions := []struct {
+		name                     string
+		queueEnabled             bool
+		queueName                string
+		actualTicket             string
+		numberOfTicketsLeft      int
+		expectedMessage          string
+		expectedChatID           string
+	}{
+		{
+			"Available queue with ticket", 
+			true, 
+			"test-queue", 
+			"K80", 
+			10, 
+			"🔔 Kolejka <b>test-queue</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>K80</b>\n🧾 Pozostało biletów: <b>10</b>",
+			"@test-channel",
+		},
+		{
+			"Unavailable queue", 
+			false, 
+			"test-queue", 
+			"K80", 
+			10, 
+			"💤 Kolejka <b>test-queue</b> jest obecnie niedostępna.",
+			"@test-channel",
+		},
+		{
+			"Available queue without ticket", 
+			true, 
+			"Odbiór karty", 
+			"", 
+			5, 
+			"🔔 Kolejka <b>Odbiór karty</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>5</b>",
+			"@test-channel",
+		},
+	}
+
+	for _, tc := range testConditions {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock API server
+			mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{
+					"result": {
+						"Wrocław": [{
+							"id": 24,
+							"name": "%v",
+							"ticket_value": "%v",
+							"tickets_left": %v,
+							"active": true,
+							"enabled": %v
+						}]
+					}
+				}`, tc.queueName,
+					tc.actualTicket,
+					tc.numberOfTicketsLeft,
+					tc.queueEnabled)
+			}))
+			defer mockDuwApi.Close()
+
+			cfg := &Config{
+				BroadcastChannelName: "test-channel",
+				QueueMonitor: QueueMonitorConfig{
+					StatusApiUrl:              mockDuwApi.URL,
+					StatusCheckTimeoutMs:      4000,
+					StatusCheckMaxAttempts:    3,
+					StatusCheckAttemptDelayMs: 500,
+				},
+			}
+
+			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
+			logger := logger.NewLogger(&logger.Config{Level: "error"})
+			notifier := &mockNotifier{}
+			sut := NewQueueMonitor(cfg, logger, collector, notifier)
+
+			// Act
+			err := sut.CheckAndProcessStatus()
+
+			// Assert
+			if err != nil {
+				t.Fatalf("Expected successful execution, but execution returned error: %v", err)
+			}
+
+			if !notifier.sendMessageCalled {
+				t.Error("Expected SendMessage to be called, but it wasn't")
+			}
+
+			if notifier.lastSentChatID != tc.expectedChatID {
+				t.Errorf("Expected chat ID to be '%s', but got '%s'", tc.expectedChatID, notifier.lastSentChatID)
+			}
+
+			if notifier.lastSentMessage != tc.expectedMessage {
+				t.Errorf("Expected message to be:\n'%s'\nbut got:\n'%s'", tc.expectedMessage, notifier.lastSentMessage)
+			}
+		})
 	}
 }
