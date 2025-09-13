@@ -13,27 +13,6 @@ import (
 	"github.com/avast/retry-go/v4"
 )
 
-// Temporary constants for backward compatibility - message building logic moved to monitor
-const (
-	msgQueueAvailableGeneral = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>%s</b>\n🧾 Pozostało biletów: <b>%d</b>"
-	msgQueueAvailableShort   = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>%d</b>"
-	msgQueueUnavailable      = "💤 Kolejka <b>%s</b> jest obecnie niedostępna."
-	parseMode                = "HTML"
-)
-
-// buildQueueAvailableMsg creates a formatted message based on queue status
-// This function is kept for backward compatibility during transition
-func buildQueueAvailableMsg(queueName string, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) string {
-	if !queueEnabled {
-		return fmt.Sprintf(msgQueueUnavailable, queueName)
-	}
-
-	if actualTicket == "" {
-		return fmt.Sprintf(msgQueueAvailableShort, queueName, numberOfTicketsLeft)
-	}
-	return fmt.Sprintf(msgQueueAvailableGeneral, queueName, actualTicket, numberOfTicketsLeft)
-}
-
 type TelegramNotifier struct {
 	cfg        *TelegramConfig
 	log        *logger.Logger
@@ -60,7 +39,7 @@ func (s *TelegramNotifier) SendMessage(chatID, text string) error {
 	reqBody := SendMessageChannelRequest{
 		ChatID:    chatID,
 		Text:      text,
-		ParseMode: parseMode,
+		ParseMode: "HTML",
 	}
 
 	return s.sendMessageWithRetries(botApiFullUrl, reqBody)
@@ -103,18 +82,4 @@ func (s *TelegramNotifier) sendMessageWithRetries(url string, reqBody SendMessag
 		retry.DelayType(retry.FixedDelay),
 		retry.Context(timeoutCtx),
 	)
-}
-
-func (s *TelegramNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannelName, queueName string, queueActive bool, queueEnabled bool, actualTicket string, numberOfTicketsLeft int) error {
-	// This method is kept for backward compatibility during transition
-	// The message building logic has been moved to the monitor
-	channelName := fmt.Sprintf("@%s", broadcastChannelName)
-	message := buildQueueAvailableMsg(queueName, queueEnabled, actualTicket, numberOfTicketsLeft)
-	
-	if err := s.SendMessage(channelName, message); err != nil {
-		return err
-	}
-	
-	s.log.Info("General queue status update notification sent successfully to TelegramApi.")
-	return nil
 }
