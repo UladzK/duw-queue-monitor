@@ -72,8 +72,11 @@ func TestSendGeneralQueueStatusUpdateNotification_WhenRequestSuccessful_SendsNot
 			defer mockPushOverApi.Close()
 
 			cfg := &TelegramConfig{
-				BaseApiUrl: mockPushOverApi.URL,
-				BotToken:   testBotToken,
+				BaseApiUrl:            mockPushOverApi.URL,
+				BotToken:              testBotToken,
+				MaxRetryAttempts:      1,
+				RetryDelayMs:          100,
+				RequestTimeoutSeconds: 2,
 			}
 
 			logger := logger.NewLogger(&logger.Config{
@@ -97,7 +100,7 @@ func TestSendMessage_WhenRequestSuccessful_SendsMessageToTelegramApiWithCorrectF
 	testBotToken := "123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
 	testChatID := "123456789"
 	testMessage := "Test message"
-	
+
 	mockTelegramApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, fmt.Sprintf("Expected HTTP POST but got %v", r.Method), http.StatusInternalServerError)
@@ -141,8 +144,11 @@ func TestSendMessage_WhenRequestSuccessful_SendsMessageToTelegramApiWithCorrectF
 	defer mockTelegramApi.Close()
 
 	cfg := &TelegramConfig{
-		BaseApiUrl: mockTelegramApi.URL,
-		BotToken:   testBotToken,
+		BaseApiUrl:            mockTelegramApi.URL,
+		BotToken:              testBotToken,
+		MaxRetryAttempts:      1,
+		RetryDelayMs:          100,
+		RequestTimeoutSeconds: 2,
 	}
 
 	logger := logger.NewLogger(&logger.Config{
@@ -164,7 +170,7 @@ func TestSendMessage_WhenApiReturnsError_ReturnsError(t *testing.T) {
 	testBotToken := "123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
 	testChatID := "123456789"
 	testMessage := "Test message"
-	
+
 	mockTelegramApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 	}))
@@ -172,8 +178,11 @@ func TestSendMessage_WhenApiReturnsError_ReturnsError(t *testing.T) {
 	defer mockTelegramApi.Close()
 
 	cfg := &TelegramConfig{
-		BaseApiUrl: mockTelegramApi.URL,
-		BotToken:   testBotToken,
+		BaseApiUrl:            mockTelegramApi.URL,
+		BotToken:              testBotToken,
+		MaxRetryAttempts:      1,
+		RetryDelayMs:          100,
+		RequestTimeoutSeconds: 2,
 	}
 
 	logger := logger.NewLogger(&logger.Config{
