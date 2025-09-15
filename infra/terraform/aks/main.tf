@@ -16,8 +16,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   sku_tier            = "Free"
 
   private_cluster_enabled = false # it's acceptable to allow access from all IPs. vNet integration is too complex and expensive. access is controlled by RBAC
-  # TODO: for some reason the aks cluster is changed with empty api_server_access_profile
-  # see issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/20085
+  # for some reason the aks cluster is changed with empty api_server_access_profile. see issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/20085
   api_server_access_profile {
     authorized_ip_ranges = [] # allow access from all IPs
   }
