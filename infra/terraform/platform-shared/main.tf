@@ -1,7 +1,8 @@
 locals {
-  location  = "Poland Central"
-  gh_repo   = "UladzK/duw-kolejka-checker"
-  gh_branch = "main" // main only for now
+  location              = "Poland Central"
+  gh_repo               = "UladzK/duw-kolejka-checker"
+  gh_branch             = "main" // main only for now
+  delete_retention_days = 30
 }
 
 resource "azurerm_resource_group" "rg_platform_shared" {
@@ -62,11 +63,11 @@ resource "azurerm_storage_account" "sa_tfstate" {
   blob_properties {
     versioning_enabled = true
     delete_retention_policy {
-      days = 30
+      days = local.delete_retention_days
     }
 
     container_delete_retention_policy {
-      days = 30
+      days = local.delete_retention_days
     }
   }
 }
