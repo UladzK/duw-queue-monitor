@@ -78,8 +78,11 @@ resource "azurerm_storage_account" "sa_tfstate" {
     delete_retention_policy {
       days = 30
     }
-  }
 
+    container_delete_retention_policy {
+      days = 30
+    }
+  }
 }
 
 resource "azurerm_storage_container" "sc_tfstate" {
