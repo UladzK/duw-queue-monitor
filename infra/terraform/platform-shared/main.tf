@@ -16,19 +16,6 @@ resource "azurerm_container_registry" "acr" {
   sku                 = "Basic"
 }
 
-// TODO: clean up, not needed
-resource "azurerm_user_assigned_identity" "app" {
-  name                = "uami-acr-app-pull-shared"
-  resource_group_name = azurerm_resource_group.rg_platform_shared.name
-  location            = azurerm_resource_group.rg_platform_shared.location
-}
-
-resource "azurerm_role_assignment" "app_pull" {
-  scope                = azurerm_container_registry.acr.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_user_assigned_identity.app.principal_id
-}
-
 resource "azuread_group" "aks_admins_group" {
   display_name     = "ug-aks-admins"
   security_enabled = true
