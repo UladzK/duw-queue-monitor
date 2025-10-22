@@ -66,7 +66,7 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 	redisClient := redis.NewClient(opt)
 
 	stateRepo := queuemonitor.NewMonitorStateRepository(redisClient, cfg.QueueMonitor.StateTtlSeconds)
-	collector := queuemonitor.NewStatusCollector(&cfg.QueueMonitor, httpClient)
+	collector := queuemonitor.NewStatusCollector(&cfg.QueueMonitor, httpClient, log)
 	notifier := buildNotifier(&cfg, log, httpClient)
 	monitor := queuemonitor.NewQueueMonitor(&cfg, log, collector, notifier)
 	weekdayMonitor := queuemonitor.NewWeekdayQueueMonitor(monitor, queuemonitor.NewSystemDateTimeProvider(), log)
