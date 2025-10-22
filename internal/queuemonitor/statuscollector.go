@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"uladzk/duw_kolejka_checker/internal/logger"
+
 	"github.com/avast/retry-go/v4"
 )
 
@@ -15,6 +17,7 @@ import (
 type StatusCollector struct {
 	cfg        *QueueMonitorConfig
 	httpClient *http.Client
+	log        *logger.Logger
 }
 
 // Response represents the top-level structure of the response from the DUW API
@@ -33,10 +36,11 @@ type Queue struct {
 	TicketsLeft int    `json:"tickets_left"`
 }
 
-func NewStatusCollector(cfg *QueueMonitorConfig, httpClient *http.Client) *StatusCollector {
+func NewStatusCollector(cfg *QueueMonitorConfig, httpClient *http.Client, log *logger.Logger) *StatusCollector {
 	return &StatusCollector{
 		cfg:        cfg,
 		httpClient: httpClient,
+		log:        log,
 	}
 }
 
@@ -58,6 +62,11 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 			return &queue, nil
 		}
 	}
+
+	s.log.Debug("Queue not found in API response",
+		"queueId", s.cfg.StatusMonitoredQueueId,
+		"city", s.cfg.StatusMonitoredQueueCity,
+		"response", response)
 
 	return nil, fmt.Errorf("failed to find the queue status for the queue with id: %v", s.cfg.StatusMonitoredQueueId)
 }

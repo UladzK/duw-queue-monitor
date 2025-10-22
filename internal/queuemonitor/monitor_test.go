@@ -106,9 +106,9 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 				},
 			}
 
-			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 			logger := logger.NewLogger(&logger.Config{
 				Level: "error"})
+			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, logger)
 
 			notifier := &mockNotifier{}
 
@@ -237,8 +237,8 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 				},
 			}
 
-			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 			logger := logger.NewLogger(&logger.Config{Level: "error"})
+			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, logger)
 
 			notifier := &mockNotifier{}
 
@@ -292,9 +292,9 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 		},
 	}
 
-	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 	logger := logger.NewLogger(&logger.Config{
 		Level: "error"})
+	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, logger)
 
 	notifier := &mockNotifier{shouldFail: true}
 
@@ -348,9 +348,9 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 		},
 	}
 
-	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 	logger := logger.NewLogger(&logger.Config{
 		Level: "error"})
+	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, logger)
 
 	notifier := &mockNotifier{shouldFail: true}
 
@@ -447,8 +447,8 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 				},
 			}
 
-			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{})
 			logger := logger.NewLogger(&logger.Config{Level: "error"})
+			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, logger)
 			notifier := &mockNotifier{}
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
 
