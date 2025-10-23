@@ -14,6 +14,8 @@ FROM alpine:3.22 AS final
 
 WORKDIR /app
 
+RUN apk add --no-cache ca-certificates
+
 COPY --from=build /app/bin/queuemonitor .
 
 CMD ["./queuemonitor"]
