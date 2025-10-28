@@ -1,6 +1,6 @@
 module uladzk/duw_kolejka_checker
 
-go 1.24.4
+go 1.25.3
 
 require (
 	github.com/avast/retry-go/v4 v4.6.1
