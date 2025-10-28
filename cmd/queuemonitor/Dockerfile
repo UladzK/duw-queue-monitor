@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN GOOS=linux GOARCH=amd64 go build -o bin/queuemonitor ./cmd/queuemonitor
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags=-s -o bin/queuemonitor ./cmd/queuemonitor
 
 FROM alpine:3.22 AS final
 
