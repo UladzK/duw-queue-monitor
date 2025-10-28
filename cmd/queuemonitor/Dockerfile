@@ -20,8 +20,6 @@ RUN apk --no-cache add curl ca-certificates openssl && \
 
 FROM alpine:3.22 AS final
 
-RUN apk --no-cache add curl
-
 WORKDIR /app
 
 COPY --from=build /etc/ssl/certs/ /etc/ssl/certs/
