@@ -1,6 +1,9 @@
 data "azurerm_subscription" "current" {
 }
 
+data "azurerm_client_config" "current" {
+}
+
 // todo: remove hardcoded values
 data "terraform_remote_state" "shared" {
   backend = "azurerm"

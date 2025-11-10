@@ -59,3 +59,40 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
   role_definition_name = "AcrPull"
 }
+
+# Azure AD Application for Terraform K8s provider authentication
+resource "azuread_application" "k8s_terraform" {
+  display_name = "terraform-k8s-provider-${var.environment}"
+  owners       = [data.azurerm_client_config.current.object_id]
+}
+
+# Service Principal for the application
+resource "azuread_service_principal" "k8s_terraform" {
+  client_id = azuread_application.k8s_terraform.client_id
+  owners    = [data.azurerm_client_config.current.object_id]
+}
+
+# Automatic password rotation trigger (365 days)
+resource "time_rotating" "k8s_terraform_password_rotation" {
+  rotation_days = 365
+}
+
+# Generate password for the service principal with automatic rotation
+resource "azuread_service_principal_password" "k8s_terraform" {
+  service_principal_id = azuread_service_principal.k8s_terraform.id
+
+  rotate_when_changed = {
+    rotation = time_rotating.k8s_terraform_password_rotation.id
+  }
+
+  # Created at: 20251110
+  # Rotates automatically every 365 days via time_rotating resource
+}
+
+# Grant Azure RBAC permissions on AKS cluster
+# This allows the service principal to manage Kubernetes resources
+resource "azurerm_role_assignment" "k8s_terraform_aks_admin" {
+  scope                = azurerm_kubernetes_cluster.aks.id
+  role_definition_name = "Azure Kubernetes Service RBAC Cluster Admin"
+  principal_id         = azuread_service_principal.k8s_terraform.object_id
+}
