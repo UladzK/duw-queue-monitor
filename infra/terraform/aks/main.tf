@@ -72,10 +72,21 @@ resource "azuread_service_principal" "k8s_terraform" {
   owners    = [data.azurerm_client_config.current.object_id]
 }
 
-# Generate password for the service principal
+# Automatic password rotation trigger (365 days)
+resource "time_rotating" "k8s_terraform_password_rotation" {
+  rotation_days = 365
+}
+
+# Generate password for the service principal with automatic rotation
 resource "azuread_service_principal_password" "k8s_terraform" {
   service_principal_id = azuread_service_principal.k8s_terraform.id
-  end_date             = "2099-01-01T00:00:00Z" # Long-lived for infrastructure automation
+
+  rotate_when_changed = {
+    rotation = time_rotating.k8s_terraform_password_rotation.id
+  }
+
+  # Created at: 20251110
+  # Rotates automatically every 365 days via time_rotating resource
 }
 
 # Grant Azure RBAC permissions on AKS cluster
