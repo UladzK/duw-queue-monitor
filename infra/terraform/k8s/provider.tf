@@ -4,11 +4,41 @@ provider "azurerm" {
 }
 
 provider "kubernetes" {
-  config_path = "~/.kube/config" # TODO: temporary solution, should be replaced with proper AKS auth to enable CI/CD
+  host                   = data.terraform_remote_state.aks.outputs.aks_host
+  cluster_ca_certificate = base64decode(data.terraform_remote_state.aks.outputs.aks_cluster_ca_certificate)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "kubelogin"
+    args = [
+      "get-token",
+      "--environment", "AzurePublicCloud",
+      "--server-id", "6dae42f8-4368-4678-94ff-3960e28e3630", # AKS AAD Server App ID (constant)
+      "--client-id", data.terraform_remote_state.aks.outputs.k8s_terraform_sp_client_id,
+      "--client-secret", data.terraform_remote_state.aks.outputs.k8s_terraform_sp_client_secret,
+      "--tenant-id", data.azurerm_subscription.current.tenant_id,
+      "--login", "spn"
+    ]
+  }
 }
 
 provider "helm" {
   kubernetes = {
-    config_path = "~/.kube/config" # TODO: temporary solution, should be replaced with proper AKS auth to enable CI/CD
+    host                   = data.terraform_remote_state.aks.outputs.aks_host
+    cluster_ca_certificate = base64decode(data.terraform_remote_state.aks.outputs.aks_cluster_ca_certificate)
+
+    exec = {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "kubelogin"
+      args = [
+        "get-token",
+        "--environment", "AzurePublicCloud",
+        "--server-id", "6dae42f8-4368-4678-94ff-3960e28e3630",
+        "--client-id", data.terraform_remote_state.aks.outputs.k8s_terraform_sp_client_id,
+        "--client-secret", data.terraform_remote_state.aks.outputs.k8s_terraform_sp_client_secret,
+        "--tenant-id", data.azurerm_subscription.current.tenant_id,
+        "--login", "spn"
+      ]
+    }
   }
 }
