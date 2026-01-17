@@ -44,6 +44,24 @@ go.work.sum
 ### Infisical files ###
 .infisical*
 
+### Node.js (for infra tooling) ###
+node_modules/
+yarn.lock
+package-lock.json
+
+### Go binaries (project-specific) ###
+main
+
+### IDE/Editor files ###
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+### Claude/AI assistant artifacts ###
+*-plan-*.md
+
 #### Misc ####
 # Logs
 *.log
