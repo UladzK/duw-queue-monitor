@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,17 +16,24 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	log, err := buildLogger()
 	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
+		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
 	runner, err := buildRunner(log)
 	if err != nil {
-		panic("failed to initialize runner: " + err.Error())
+		return fmt.Errorf("failed to initialize runner: %w", err)
 	}
 
 	log.Info("Starting queue monitor...")
@@ -40,6 +48,8 @@ func main() {
 	<-done
 
 	log.Info("Queue monitor stopped")
+
+	return nil
 }
 
 func buildLogger() (*logger.Logger, error) {
