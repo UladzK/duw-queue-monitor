@@ -6,26 +6,42 @@ set -euo pipefail
 
 # Usage check
 if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <module> <env> [-destroy]"
+  echo "Usage: $0 <module> <env> [--skip-infisical-login] [-destroy]"
   exit 1
 fi
 
 # --- Input Arguments ---
 MODULE="$1"
 ENV="$2"
+shift 2
+
+# --- Parse optional flags ---
+SKIP_INFISICAL_LOGIN=false
 DESTROY=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --skip-infisical-login)
+      SKIP_INFISICAL_LOGIN=true
+      shift
+      ;;
+    -destroy)
+      DESTROY=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 MODULE_DIR="$SCRIPT_DIR/../terraform/$MODULE"
 
 # --- Constants ---
 readonly AZURE_SUB="77a70a5e-2230-43b7-8983-61e7497498a8"
 readonly INFISICAL_PROJECT_ID="145e0d1a-6378-4338-a9eb-2d77178f96e7" # terraform secrets project ID
-
-# --- Script workflow ---
-
-if [[ $# -gt 2 && "$3" == "-destroy" ]]; then
-  DESTROY=true
-fi
 
 if [[ ! -d "$MODULE_DIR" ]]; then
   echo "❌ Error: Module directory '$MODULE_DIR' does not exist."
@@ -38,7 +54,12 @@ echo "🔨 Destroy flag: $DESTROY"
 cd "$MODULE_DIR"
 
 # --- Infisical Login ---
-infisical login
+if [[ $SKIP_INFISICAL_LOGIN == false ]]; then
+  echo "🔐 Logging in to Infisical..."
+  infisical login
+else
+  echo "⚠️ Skipping Infisical login as per user request."
+fi
 
 # --- Check Azure CLI Login ---
 if ! az account show; then
