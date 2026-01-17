@@ -33,7 +33,7 @@ type SendMessageChannelRequest struct {
 	ParseMode string `json:"parse_mode"` // needed to correctly format the message in Telegram
 }
 
-func (s *TelegramNotifier) SendMessage(chatID, text string) error {
+func (s *TelegramNotifier) SendMessage(ctx context.Context, chatID, text string) error {
 	botApiFullUrl := fmt.Sprintf("%s/bot%s/sendMessage", s.cfg.BaseApiUrl, s.cfg.BotToken)
 
 	reqBody := SendMessageChannelRequest{
@@ -42,12 +42,12 @@ func (s *TelegramNotifier) SendMessage(chatID, text string) error {
 		ParseMode: "HTML",
 	}
 
-	return s.sendMessageWithRetries(botApiFullUrl, reqBody)
+	return s.sendMessageWithRetries(ctx, botApiFullUrl, reqBody)
 }
 
-func (s *TelegramNotifier) sendMessageWithRetries(url string, reqBody SendMessageChannelRequest) error {
+func (s *TelegramNotifier) sendMessageWithRetries(ctx context.Context, url string, reqBody SendMessageChannelRequest) error {
 	requestTimeout := time.Duration(s.cfg.RequestTimeoutSeconds) * time.Second
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
 	retryDelay := time.Duration(s.cfg.RetryDelayMs) * time.Millisecond
@@ -59,7 +59,13 @@ func (s *TelegramNotifier) sendMessageWithRetries(url string, reqBody SendMessag
 				return fmt.Errorf("failed to marshal request body when sending message to TelegramApi: %w", err)
 			}
 
-			resp, err := s.httpClient.Post(url, "application/json", bytes.NewBuffer(b))
+			req, err := http.NewRequestWithContext(timeoutCtx, "POST", url, bytes.NewBuffer(b))
+			if err != nil {
+				return fmt.Errorf("failed to create HTTP request: %w", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := s.httpClient.Do(req)
 			if err != nil {
 				return fmt.Errorf("failed to send message to TelegramApi: %w", err)
 			}

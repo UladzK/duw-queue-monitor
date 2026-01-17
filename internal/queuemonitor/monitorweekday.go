@@ -1,6 +1,7 @@
 package queuemonitor
 
 import (
+	"context"
 	"time"
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
@@ -39,13 +40,13 @@ func (w *WeekdayQueueMonitor) GetState() *MonitorState {
 	return w.defaultMonitor.GetState()
 }
 
-func (w *WeekdayQueueMonitor) CheckAndProcessStatus() error {
+func (w *WeekdayQueueMonitor) CheckAndProcessStatus(ctx context.Context) error {
 	if w.isDuwOffTime() {
 		w.log.Debug("Queue monitoring is disabled on weekends and off hours (06:00 - 18:00 UTC), skipping status check")
 		return nil
 	}
 
-	return w.defaultMonitor.CheckAndProcessStatus()
+	return w.defaultMonitor.CheckAndProcessStatus(ctx)
 }
 
 func (w *WeekdayQueueMonitor) isDuwOffTime() bool {

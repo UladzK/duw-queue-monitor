@@ -1,6 +1,7 @@
 package queuemonitor
 
 import (
+	"context"
 	"fmt"
 	"uladzk/duw_kolejka_checker/internal/logger"
 )
@@ -43,8 +44,8 @@ func (h *DefaultQueueMonitor) GetState() *MonitorState {
 	return h.state
 }
 
-func (h *DefaultQueueMonitor) CheckAndProcessStatus() error {
-	newState, err := h.collector.GetQueueStatus()
+func (h *DefaultQueueMonitor) CheckAndProcessStatus(ctx context.Context) error {
+	newState, err := h.collector.GetQueueStatus(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting queue status: %w", err)
 	}
@@ -61,7 +62,7 @@ func (h *DefaultQueueMonitor) CheckAndProcessStatus() error {
 	if shouldNotifyStatusUpdate {
 		channelName := fmt.Sprintf("@%s", h.cfg.BroadcastChannelName)
 		message := buildQueueAvailableMsg(newState.Name, newState.Enabled, newState.TicketValue, newState.TicketsLeft)
-		if err := h.notifier.SendMessage(channelName, message); err != nil {
+		if err := h.notifier.SendMessage(ctx, channelName, message); err != nil {
 			return fmt.Errorf("error sending queue enabled notification: %w", err)
 		}
 	}

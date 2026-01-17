@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -71,7 +72,7 @@ func TestSendMessage_WhenRequestSuccessful_SendsMessageToTelegramApiWithCorrectF
 	sut := NewTelegramNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendMessage(testChatID, testMessage)
+	err := sut.SendMessage(context.Background(), testChatID, testMessage)
 
 	// Assert
 	if err != nil {
@@ -105,7 +106,7 @@ func TestSendMessage_WhenApiReturnsError_ReturnsError(t *testing.T) {
 	sut := NewTelegramNotifier(cfg, logger, &http.Client{})
 
 	// Act
-	err := sut.SendMessage(testChatID, testMessage)
+	err := sut.SendMessage(context.Background(), testChatID, testMessage)
 
 	// Assert
 	if err == nil {
