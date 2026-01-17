@@ -12,10 +12,9 @@ import (
 )
 
 type mockNotifier struct {
-	shouldFail     bool // used to simulate failure in sending notification
-	called         bool
-	lastSentStatus *Queue
-	// New fields for tracking SendMessage calls
+	shouldFail        bool
+	called            bool
+	lastSentStatus    *Queue
 	sendMessageCalled bool
 	lastSentChatID    string
 	lastSentMessage   string
@@ -48,6 +47,16 @@ func (f *mockNotifier) SendMessage(ctx context.Context, chatID, text string) err
 	}
 
 	return nil
+}
+
+func deriveStateName(active, enabled bool) string {
+	if !active {
+		return "Inactive"
+	}
+	if enabled {
+		return "ActiveEnabled"
+	}
+	return "ActiveDisabled"
 }
 
 func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTransition(t *testing.T) {
@@ -115,6 +124,7 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
 			expectedFinalState := &MonitorState{
+				StateName:           deriveStateName(tc.newState.Active, tc.newState.Enabled),
 				QueueActive:         tc.newState.Active,
 				QueueEnabled:        tc.newState.Enabled,
 				LastTicketProcessed: tc.newState.TicketValue,
@@ -132,9 +142,6 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 			if notifier.sendMessageCalled != tc.notificationShouldBeSent {
 				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.sendMessageCalled)
 			}
-
-			// Note: lastSentStatus is no longer used since we switched to SendMessage method
-			// Message format is verified by TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages
 
 			if stateDiff := cmp.Diff(sut.GetState(), expectedFinalState); stateDiff != "" {
 				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", stateDiff)
@@ -246,6 +253,7 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
 			sut.Init(&tc.initialState)
 			expectedFinalState := &MonitorState{
+				StateName:           deriveStateName(tc.newState.Active, tc.newState.Enabled),
 				QueueActive:         tc.newState.Active,
 				QueueEnabled:        tc.newState.Enabled,
 				TicketsLeft:         tc.newState.TicketsLeft,
@@ -263,9 +271,6 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			if notifier.sendMessageCalled != tc.notificationShouldBeSent {
 				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.sendMessageCalled)
 			}
-
-			// Note: lastSentStatus is no longer used since we switched to SendMessage method
-			// Message format is verified by TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages
 
 			if diffState := cmp.Diff(sut.GetState(), expectedFinalState); diffState != "" {
 				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", diffState)
@@ -356,10 +361,11 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 	notifier := &mockNotifier{shouldFail: true}
 
 	sut := NewQueueMonitor(cfg, logger, collector, notifier)
-	sut.isStateInitialized = true
-	sut.state.QueueActive = true
-	sut.state.QueueEnabled = true
-	sut.state.TicketsLeft = 10
+	sut.Init(&MonitorState{
+		QueueActive:  true,
+		QueueEnabled: true,
+		TicketsLeft:  10,
+	})
 
 	// Act
 	err := sut.CheckAndProcessStatus(context.Background())
@@ -416,7 +422,6 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 
 	for _, tc := range testConditions {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock API server
 			mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, `{
 					"result": {

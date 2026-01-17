@@ -11,6 +11,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const testChannelName = "test-channel"
+
 func initDevContainer(ctx context.Context, t *testing.T) testcontainers.Container {
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:latest",
@@ -101,5 +103,70 @@ func TestGet_WhenNoStateFoundInRedis_ReturnsNilWithoutError(t *testing.T) {
 
 	if returnedState != nil {
 		t.Errorf("Expected to get a nil state, but: got %v", returnedState)
+	}
+}
+
+func TestGet_WithLegacyFormat_CanBeReadAndConvertedToState(t *testing.T) {
+	testCases := []struct {
+		name          string
+		legacyData    string
+		expectedState string
+		expectedTL    int
+	}{
+		{
+			"ActiveEnabled legacy format",
+			`{"queue_active":true,"queue_enabled":true,"last_ticket_processed":"K123","tickets_left":5}`,
+			"ActiveEnabled",
+			5,
+		},
+		{
+			"ActiveDisabled legacy format",
+			`{"queue_active":true,"queue_enabled":false,"last_ticket_processed":"K123","tickets_left":0}`,
+			"ActiveDisabled",
+			0,
+		},
+		{
+			"Inactive legacy format",
+			`{"queue_active":false,"queue_enabled":false,"last_ticket_processed":"","tickets_left":0}`,
+			"Inactive",
+			0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			ctx := context.Background()
+			redisC := initDevContainer(ctx, t)
+			defer testcontainers.CleanupContainer(t, redisC)
+
+			endpoint, err := redisC.Endpoint(ctx, "")
+			if err != nil {
+				t.Fatalf("Failed to get Redis endpoint: %v", err)
+			}
+			redisClient := redis.NewClient(&redis.Options{Addr: endpoint})
+
+			if err := redisClient.Set(ctx, "monitor:state", tc.legacyData, 0).Err(); err != nil {
+				t.Fatalf("Failed to set legacy data: %v", err)
+			}
+
+			sut := NewMonitorStateRepository(redisClient, 120)
+
+			// Act
+			state, err := sut.Get(ctx)
+
+			// Assert
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			queueState := StateFromPersistence(state, &mockNotifier{}, testChannelName)
+			if queueState.Name() != tc.expectedState {
+				t.Errorf("expected %s state, got %s", tc.expectedState, queueState.Name())
+			}
+			if queueState.TicketsLeft() != tc.expectedTL {
+				t.Errorf("expected ticketsLeft=%d, got %d", tc.expectedTL, queueState.TicketsLeft())
+			}
+		})
 	}
 }

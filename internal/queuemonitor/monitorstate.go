@@ -10,6 +10,7 @@ import (
 )
 
 type MonitorState struct {
+	StateName           string `json:"state_name,omitempty"`  // state name for State Pattern persistence
 	QueueActive         bool   `json:"queue_active"`          // indicates if the queue is currently active
 	QueueEnabled        bool   `json:"queue_enabled"`         // indicates if the queue is enabled
 	LastTicketProcessed string `json:"last_ticket_processed"` // last ticket processed in the queue

@@ -7,26 +7,25 @@ import (
 )
 
 // DefaultQueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
-// Essentially, it is a state machine that checks the queue status periodically and notifies about changes.
-// It uses a StatusCollector to get the queue status and a Notifier to send notifications.
+// Essentially, it's a state machine which tracks the current state of the DUW queue.
 type DefaultQueueMonitor struct {
-	cfg                *Config
-	log                *logger.Logger
-	collector          *StatusCollector
-	notifier           Notifier
-	isStateInitialized bool
-	state              *MonitorState
+	cfg       *Config
+	log       *logger.Logger
+	collector *StatusCollector
+	notifier  Notifier
+	state     QueueState
+	lastQueue *Queue
 }
 
 func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier Notifier) *DefaultQueueMonitor {
-	return &DefaultQueueMonitor{
-		cfg:                cfg,
-		log:                log,
-		collector:          collector,
-		notifier:           notifier,
-		isStateInitialized: false,
-		state:              &MonitorState{},
+	m := &DefaultQueueMonitor{
+		cfg:       cfg,
+		log:       log,
+		collector: collector,
+		notifier:  notifier,
 	}
+	m.state = &UninitializedState{notifier: notifier, channelName: cfg.BroadcastChannelName}
+	return m
 }
 
 func (h *DefaultQueueMonitor) Init(initState *MonitorState) {
@@ -34,66 +33,33 @@ func (h *DefaultQueueMonitor) Init(initState *MonitorState) {
 		panic("QueueMonitor.Init called with nil state. This should not happen")
 	}
 
-	h.state = initState
-	h.isStateInitialized = true
-
-	h.log.Info("QueueMonitor initialized with state:", "initState", initState)
+	h.state = StateFromPersistence(initState, h.notifier, h.cfg.BroadcastChannelName)
+	h.log.Info("QueueMonitor initialized with state:", "stateName", h.state.Name(), "initState", initState)
 }
 
 func (h *DefaultQueueMonitor) GetState() *MonitorState {
-	return h.state
+	return StateToPersistence(h.state, h.lastQueue)
 }
 
 func (h *DefaultQueueMonitor) CheckAndProcessStatus(ctx context.Context) error {
-	newState, err := h.collector.GetQueueStatus(ctx)
+	queue, err := h.collector.GetQueueStatus(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting queue status: %w", err)
 	}
 
-	if !newState.Active {
-		h.log.Debug("Queue is not active, skipping notification", "newState", newState)
-		h.updateState(newState)
-		return nil
+	prevStateName := h.state.Name()
+	newState, err := h.state.Handle(ctx, queue)
+	if err != nil {
+		return err
 	}
 
-	// Notify if state is not initialized, or state changed
-	shouldNotifyStatusUpdate := !h.isStateInitialized || h.stateChanged(newState)
-
-	if shouldNotifyStatusUpdate {
-		channelName := fmt.Sprintf("@%s", h.cfg.BroadcastChannelName)
-		message := buildQueueAvailableMsg(newState.Name, newState.Enabled, newState.TicketValue, newState.TicketsLeft)
-		if err := h.notifier.SendMessage(ctx, channelName, message); err != nil {
-			return fmt.Errorf("error sending queue enabled notification: %w", err)
-		}
+	if newState.Name() != prevStateName {
+		h.log.Info("State transition", "from", prevStateName, "to", newState.Name())
 	}
 
-	h.updateState(newState)
-	h.log.Debug("Latest state:", "latestState", h.state)
+	h.state = newState
+	h.lastQueue = queue
+	h.log.Debug("Latest state:", "stateName", h.state.Name(), "ticketsLeft", h.state.TicketsLeft())
 
 	return nil
-}
-
-func (h *DefaultQueueMonitor) stateChanged(newState *Queue) bool {
-	// Notify if status changed, or tickets left changed (when enabled)
-	if h.statusChanged(newState) || (newState.Enabled && h.state.TicketsLeft != newState.TicketsLeft) {
-		h.log.Debug("Sending notification. Conditions met for notification.", "is not initialized", !h.isStateInitialized, "status changed", h.statusChanged(newState),
-			"tickets left changed", h.state.TicketsLeft != newState.TicketsLeft)
-		h.log.Debug("Current state and new state", "currentState", h.state, "newState", newState)
-
-		return true
-	}
-
-	return false
-}
-
-func (h *DefaultQueueMonitor) statusChanged(newQueueStatus *Queue) bool {
-	return h.state.QueueActive != newQueueStatus.Active || h.state.QueueEnabled != newQueueStatus.Enabled
-}
-
-func (h *DefaultQueueMonitor) updateState(newQueueStatus *Queue) {
-	h.isStateInitialized = true
-	h.state.LastTicketProcessed = newQueueStatus.TicketValue
-	h.state.QueueEnabled = newQueueStatus.Enabled
-	h.state.QueueActive = newQueueStatus.Active
-	h.state.TicketsLeft = newQueueStatus.TicketsLeft
 }
