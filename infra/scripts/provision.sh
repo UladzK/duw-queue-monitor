@@ -6,13 +6,14 @@ set -euo pipefail
 
 # Usage check
 if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <module> <env> [-destroy]"
+  echo "Usage: $0 <module> <env> [<skip_infisical_login>] [-destroy]"
   exit 1
 fi
 
 # --- Input Arguments ---
 MODULE="$1"
 ENV="$2"
+SKIP_INFISICAL_LOGIN=${3:-false}
 DESTROY=false
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 MODULE_DIR="$SCRIPT_DIR/../terraform/$MODULE"
@@ -38,7 +39,12 @@ echo "🔨 Destroy flag: $DESTROY"
 cd "$MODULE_DIR"
 
 # --- Infisical Login ---
-infisical login
+if [[ $SKIP_INFISICAL_LOGIN == false ]]; then
+  echo "🔐 Logging in to Infisical..."
+  infisical login
+else
+  echo "⚠️ Skipping Infisical login as per user request."
+fi
 
 # --- Check Azure CLI Login ---
 if ! az account show; then
