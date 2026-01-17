@@ -159,7 +159,7 @@ func TestGet_WithLegacyFormat_CanBeReadAndConvertedToState(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			queueState := StateFromPersistence(state)
+			queueState := StateFromPersistence(state, &mockNotifier{}, testChannelName)
 			if queueState.Name() != tc.expectedState {
 				t.Errorf("expected %s state, got %s", tc.expectedState, queueState.Name())
 			}

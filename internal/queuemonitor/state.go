@@ -1,14 +1,17 @@
 package queuemonitor
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // QueueState represents a state in the queue monitor state machine.
 // Each state is responsible for handling incoming queue status and
 // determining if a transition to a new state should occur.
 type QueueState interface {
 	// Handle processes the new queue status and returns the next state.
-	// It may trigger notifications via the monitor's notification methods.
-	Handle(ctx context.Context, m *DefaultQueueMonitor, queue *Queue) (QueueState, error)
+	// It may trigger notifications via the state's notifier.
+	Handle(ctx context.Context, queue *Queue) (QueueState, error)
 
 	// Name returns the state name for logging and persistence.
 	Name() string
@@ -17,39 +20,48 @@ type QueueState interface {
 	TicketsLeft() int
 }
 
+// sendNotification sends a notification about the queue status.
+// This is used by state implementations when they need to notify.
+func sendNotification(ctx context.Context, notifier Notifier, channelName string, queue *Queue) error {
+	chatID := fmt.Sprintf("@%s", channelName)
+	message := buildQueueAvailableMsg(queue.Name, queue.Enabled, queue.TicketValue, queue.TicketsLeft)
+	if err := notifier.SendMessage(ctx, chatID, message); err != nil {
+		return fmt.Errorf("error sending queue notification: %w", err)
+	}
+	return nil
+}
+
 // StateFromPersistence reconstructs a QueueState from persisted MonitorState.
-// Handles both new format (StateName) and legacy format (boolean flags).
-func StateFromPersistence(ms *MonitorState) QueueState {
+func StateFromPersistence(ms *MonitorState, notifier Notifier, channelName string) QueueState {
 	if ms == nil {
-		return &UninitializedState{}
+		return &UninitializedState{notifier: notifier, channelName: channelName}
 	}
 
 	// New format: use StateName directly
 	if ms.StateName != "" {
 		switch ms.StateName {
 		case "Inactive":
-			return &InactiveState{}
+			return &InactiveState{notifier: notifier, channelName: channelName}
 		case "ActiveDisabled":
-			return &ActiveDisabledState{}
+			return &ActiveDisabledState{notifier: notifier, channelName: channelName}
 		case "ActiveEnabled":
-			return &ActiveEnabledState{ticketsLeft: ms.TicketsLeft}
+			return &ActiveEnabledState{notifier: notifier, channelName: channelName, ticketsLeft: ms.TicketsLeft}
 		case "Uninitialized":
-			return &UninitializedState{}
+			return &UninitializedState{notifier: notifier, channelName: channelName}
 		}
 	}
 
 	// For backwards compatibility: derive state from boolean flags
 	if !ms.QueueActive {
-		return &InactiveState{}
+		return &InactiveState{notifier: notifier, channelName: channelName}
 	}
 	if ms.QueueEnabled {
-		return &ActiveEnabledState{ticketsLeft: ms.TicketsLeft}
+		return &ActiveEnabledState{notifier: notifier, channelName: channelName, ticketsLeft: ms.TicketsLeft}
 	}
-	return &ActiveDisabledState{}
+	return &ActiveDisabledState{notifier: notifier, channelName: channelName}
 }
 
 // StateToPersistence converts a QueueState to MonitorState for persistence.
-// Maintains backward compatibility by populating both new and legacy fields.
 func StateToPersistence(state QueueState, queue *Queue) *MonitorState {
 	ms := &MonitorState{
 		StateName: state.Name(),

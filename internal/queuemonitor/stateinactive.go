@@ -2,24 +2,27 @@ package queuemonitor
 
 import "context"
 
-// InactiveState represents the state when queue is not active.
-type InactiveState struct{}
+// InactiveState represents the state when queue is not active (DUW off hours)
+type InactiveState struct {
+	notifier    Notifier
+	channelName string
+}
 
 func (s *InactiveState) Name() string     { return "Inactive" }
 func (s *InactiveState) TicketsLeft() int { return 0 }
 
-func (s *InactiveState) Handle(ctx context.Context, m *DefaultQueueMonitor, queue *Queue) (QueueState, error) {
+func (s *InactiveState) Handle(ctx context.Context, queue *Queue) (QueueState, error) {
 	if !queue.Active {
-		return s, nil // Stay inactive
+		return s, nil // Stay inactive with notification
 	}
 
-	// Transition: Inactive -> Active (notify user)
-	if err := m.notifyQueueStatus(ctx, queue); err != nil {
+	// Queue has become active
+	if err := sendNotification(ctx, s.notifier, s.channelName, queue); err != nil {
 		return s, err
 	}
 
 	if queue.Enabled {
-		return &ActiveEnabledState{ticketsLeft: queue.TicketsLeft}, nil
+		return &ActiveEnabledState{notifier: s.notifier, channelName: s.channelName, ticketsLeft: queue.TicketsLeft}, nil
 	}
-	return &ActiveDisabledState{}, nil
+	return &ActiveDisabledState{notifier: s.notifier, channelName: s.channelName}, nil
 }

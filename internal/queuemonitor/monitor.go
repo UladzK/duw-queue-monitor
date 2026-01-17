@@ -19,13 +19,14 @@ type DefaultQueueMonitor struct {
 }
 
 func NewQueueMonitor(cfg *Config, log *logger.Logger, collector *StatusCollector, notifier Notifier) *DefaultQueueMonitor {
-	return &DefaultQueueMonitor{
+	m := &DefaultQueueMonitor{
 		cfg:       cfg,
 		log:       log,
 		collector: collector,
 		notifier:  notifier,
-		state:     &UninitializedState{},
 	}
+	m.state = &UninitializedState{notifier: notifier, channelName: cfg.BroadcastChannelName}
+	return m
 }
 
 func (h *DefaultQueueMonitor) Init(initState *MonitorState) {
@@ -33,7 +34,7 @@ func (h *DefaultQueueMonitor) Init(initState *MonitorState) {
 		panic("QueueMonitor.Init called with nil state. This should not happen")
 	}
 
-	h.state = StateFromPersistence(initState)
+	h.state = StateFromPersistence(initState, h.notifier, h.cfg.BroadcastChannelName)
 	h.log.Info("QueueMonitor initialized with state:", "stateName", h.state.Name(), "initState", initState)
 }
 
@@ -48,7 +49,7 @@ func (h *DefaultQueueMonitor) CheckAndProcessStatus(ctx context.Context) error {
 	}
 
 	prevStateName := h.state.Name()
-	newState, err := h.state.Handle(ctx, h, queue)
+	newState, err := h.state.Handle(ctx, queue)
 	if err != nil {
 		return err
 	}
@@ -61,16 +62,5 @@ func (h *DefaultQueueMonitor) CheckAndProcessStatus(ctx context.Context) error {
 	h.lastQueue = queue
 	h.log.Debug("Latest state:", "stateName", h.state.Name(), "ticketsLeft", h.state.TicketsLeft())
 
-	return nil
-}
-
-// notifyQueueStatus sends a notification about the queue status.
-// This is called by state implementations when they need to notify.
-func (h *DefaultQueueMonitor) notifyQueueStatus(ctx context.Context, queue *Queue) error {
-	channelName := fmt.Sprintf("@%s", h.cfg.BroadcastChannelName)
-	message := buildQueueAvailableMsg(queue.Name, queue.Enabled, queue.TicketValue, queue.TicketsLeft)
-	if err := h.notifier.SendMessage(ctx, channelName, message); err != nil {
-		return fmt.Errorf("error sending queue notification: %w", err)
-	}
 	return nil
 }

@@ -2,36 +2,10 @@ package queuemonitor
 
 import (
 	"context"
-	"fmt"
 	"testing"
-	"uladzk/duw_kolejka_checker/internal/logger"
 )
 
-type testNotifier struct {
-	sendMessageCalled bool
-	shouldFail        bool
-}
-
-func (n *testNotifier) SendMessage(ctx context.Context, chatID, text string) error {
-	n.sendMessageCalled = true
-	if n.shouldFail {
-		return fmt.Errorf("notification failed")
-	}
-	return nil
-}
-
-func createTestMonitor(notifier Notifier) *DefaultQueueMonitor {
-	cfg := &Config{
-		BroadcastChannelName: "test-channel",
-	}
-	log := logger.NewLogger(&logger.Config{Level: "error"})
-	return &DefaultQueueMonitor{
-		cfg:      cfg,
-		log:      log,
-		notifier: notifier,
-		state:    &UninitializedState{},
-	}
-}
+const testChannelName = "test-channel"
 
 // =============================================================================
 // UninitializedState Tests
@@ -39,13 +13,12 @@ func createTestMonitor(notifier Notifier) *DefaultQueueMonitor {
 
 func TestUninitializedState_Handle_WhenQueueInactive_TransitionsToInactive(t *testing.T) {
 	// Arrange
-	state := &UninitializedState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &UninitializedState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: false, Enabled: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -61,13 +34,12 @@ func TestUninitializedState_Handle_WhenQueueInactive_TransitionsToInactive(t *te
 
 func TestUninitializedState_Handle_WhenQueueActiveEnabled_TransitionsToActiveEnabled(t *testing.T) {
 	// Arrange
-	state := &UninitializedState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &UninitializedState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: true, Enabled: true, TicketsLeft: 10}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -86,13 +58,12 @@ func TestUninitializedState_Handle_WhenQueueActiveEnabled_TransitionsToActiveEna
 
 func TestUninitializedState_Handle_WhenQueueActiveDisabled_TransitionsToActiveDisabled(t *testing.T) {
 	// Arrange
-	state := &UninitializedState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &UninitializedState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: true, Enabled: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -112,13 +83,12 @@ func TestUninitializedState_Handle_WhenQueueActiveDisabled_TransitionsToActiveDi
 
 func TestInactiveState_Handle_WhenQueueStaysInactive_StaysInInactive(t *testing.T) {
 	// Arrange
-	state := &InactiveState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &InactiveState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -134,13 +104,12 @@ func TestInactiveState_Handle_WhenQueueStaysInactive_StaysInInactive(t *testing.
 
 func TestInactiveState_Handle_WhenQueueBecomesActiveEnabled_TransitionsToActiveEnabled(t *testing.T) {
 	// Arrange
-	state := &InactiveState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &InactiveState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: true, Enabled: true, TicketsLeft: 5}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -156,13 +125,12 @@ func TestInactiveState_Handle_WhenQueueBecomesActiveEnabled_TransitionsToActiveE
 
 func TestInactiveState_Handle_WhenQueueBecomesActiveDisabled_TransitionsToActiveDisabled(t *testing.T) {
 	// Arrange
-	state := &InactiveState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &InactiveState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: true, Enabled: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -182,13 +150,12 @@ func TestInactiveState_Handle_WhenQueueBecomesActiveDisabled_TransitionsToActive
 
 func TestActiveDisabledState_Handle_WhenQueueBecomesInactive_TransitionsToInactive(t *testing.T) {
 	// Arrange
-	state := &ActiveDisabledState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &ActiveDisabledState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -204,13 +171,12 @@ func TestActiveDisabledState_Handle_WhenQueueBecomesInactive_TransitionsToInacti
 
 func TestActiveDisabledState_Handle_WhenQueueBecomesEnabled_TransitionsToActiveEnabled(t *testing.T) {
 	// Arrange
-	state := &ActiveDisabledState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &ActiveDisabledState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: true, Enabled: true, TicketsLeft: 15}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -229,13 +195,12 @@ func TestActiveDisabledState_Handle_WhenQueueBecomesEnabled_TransitionsToActiveE
 
 func TestActiveDisabledState_Handle_WhenQueueStaysDisabled_StaysInActiveDisabled(t *testing.T) {
 	// Arrange
-	state := &ActiveDisabledState{}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &ActiveDisabledState{notifier: notifier, channelName: testChannelName}
 	queue := &Queue{Active: true, Enabled: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -255,13 +220,12 @@ func TestActiveDisabledState_Handle_WhenQueueStaysDisabled_StaysInActiveDisabled
 
 func TestActiveEnabledState_Handle_WhenQueueBecomesInactive_TransitionsToInactive(t *testing.T) {
 	// Arrange
-	state := &ActiveEnabledState{ticketsLeft: 10}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &ActiveEnabledState{notifier: notifier, channelName: testChannelName, ticketsLeft: 10}
 	queue := &Queue{Active: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -277,13 +241,12 @@ func TestActiveEnabledState_Handle_WhenQueueBecomesInactive_TransitionsToInactiv
 
 func TestActiveEnabledState_Handle_WhenQueueBecomesDisabled_TransitionsToActiveDisabled(t *testing.T) {
 	// Arrange
-	state := &ActiveEnabledState{ticketsLeft: 10}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &ActiveEnabledState{notifier: notifier, channelName: testChannelName, ticketsLeft: 10}
 	queue := &Queue{Active: true, Enabled: false}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -299,13 +262,12 @@ func TestActiveEnabledState_Handle_WhenQueueBecomesDisabled_TransitionsToActiveD
 
 func TestActiveEnabledState_Handle_WhenTicketsChange_NotifiesAndStaysEnabled(t *testing.T) {
 	// Arrange
-	state := &ActiveEnabledState{ticketsLeft: 10}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &ActiveEnabledState{notifier: notifier, channelName: testChannelName, ticketsLeft: 10}
 	queue := &Queue{Active: true, Enabled: true, TicketsLeft: 5}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -324,13 +286,12 @@ func TestActiveEnabledState_Handle_WhenTicketsChange_NotifiesAndStaysEnabled(t *
 
 func TestActiveEnabledState_Handle_WhenNoChange_StaysEnabledWithoutNotification(t *testing.T) {
 	// Arrange
-	state := &ActiveEnabledState{ticketsLeft: 10}
-	notifier := &testNotifier{}
-	monitor := createTestMonitor(notifier)
+	notifier := &mockNotifier{}
+	state := &ActiveEnabledState{notifier: notifier, channelName: testChannelName, ticketsLeft: 10}
 	queue := &Queue{Active: true, Enabled: true, TicketsLeft: 10}
 
 	// Act
-	newState, err := state.Handle(context.Background(), monitor, queue)
+	newState, err := state.Handle(context.Background(), queue)
 
 	// Assert
 	if err != nil {
@@ -349,8 +310,11 @@ func TestActiveEnabledState_Handle_WhenNoChange_StaysEnabledWithoutNotification(
 // =============================================================================
 
 func TestStateFromPersistence_WithNil_ReturnsUninitializedState(t *testing.T) {
-	// Arrange / Act
-	state := StateFromPersistence(nil)
+	// Arrange
+	notifier := &mockNotifier{}
+
+	// Act
+	state := StateFromPersistence(nil, notifier, testChannelName)
 
 	// Assert
 	if state.Name() != "Uninitialized" {
@@ -393,8 +357,11 @@ func TestStateFromPersistence_WithNewFormat_UsesStateName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			notifier := &mockNotifier{}
+
 			// Act
-			state := StateFromPersistence(tc.input)
+			state := StateFromPersistence(tc.input, notifier, testChannelName)
 
 			// Assert
 			if state.Name() != tc.expectedState {
@@ -436,8 +403,11 @@ func TestStateFromPersistence_WithLegacyFormat_DerivesStateFromBooleans(t *testi
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			notifier := &mockNotifier{}
+
 			// Act
-			state := StateFromPersistence(tc.input)
+			state := StateFromPersistence(tc.input, notifier, testChannelName)
 
 			// Assert
 			if state.Name() != tc.expectedState {
@@ -455,17 +425,18 @@ func TestStateFromPersistence_WithLegacyFormat_DerivesStateFromBooleans(t *testi
 // =============================================================================
 
 func TestStateToPersistence_IncludesStateName(t *testing.T) {
+	notifier := &mockNotifier{}
 	testCases := []struct {
-		name          string
-		state         QueueState
-		expectedName  string
-		expectedAct   bool
-		expectedEn    bool
-		expectedTL    int
+		name         string
+		state        QueueState
+		expectedName string
+		expectedAct  bool
+		expectedEn   bool
+		expectedTL   int
 	}{
 		{
 			"UninitializedState",
-			&UninitializedState{},
+			&UninitializedState{notifier: notifier, channelName: testChannelName},
 			"Uninitialized",
 			false,
 			false,
@@ -473,7 +444,7 @@ func TestStateToPersistence_IncludesStateName(t *testing.T) {
 		},
 		{
 			"InactiveState",
-			&InactiveState{},
+			&InactiveState{notifier: notifier, channelName: testChannelName},
 			"Inactive",
 			false,
 			false,
@@ -481,7 +452,7 @@ func TestStateToPersistence_IncludesStateName(t *testing.T) {
 		},
 		{
 			"ActiveDisabledState",
-			&ActiveDisabledState{},
+			&ActiveDisabledState{notifier: notifier, channelName: testChannelName},
 			"ActiveDisabled",
 			true,
 			false,
@@ -489,7 +460,7 @@ func TestStateToPersistence_IncludesStateName(t *testing.T) {
 		},
 		{
 			"ActiveEnabledState",
-			&ActiveEnabledState{ticketsLeft: 7},
+			&ActiveEnabledState{notifier: notifier, channelName: testChannelName, ticketsLeft: 7},
 			"ActiveEnabled",
 			true,
 			true,
@@ -521,7 +492,8 @@ func TestStateToPersistence_IncludesStateName(t *testing.T) {
 
 func TestStateToPersistence_WithQueueData_IncludesTicketInfo(t *testing.T) {
 	// Arrange
-	state := &ActiveEnabledState{ticketsLeft: 10}
+	notifier := &mockNotifier{}
+	state := &ActiveEnabledState{notifier: notifier, channelName: testChannelName, ticketsLeft: 10}
 	queue := &Queue{TicketValue: "K123", TicketsLeft: 8}
 
 	// Act
@@ -542,33 +514,43 @@ func TestStateToPersistence_WithQueueData_IncludesTicketInfo(t *testing.T) {
 
 func TestState_Handle_WhenNotificationFails_ReturnsErrorAndKeepsState(t *testing.T) {
 	testCases := []struct {
-		name  string
-		state QueueState
-		queue *Queue
+		name      string
+		makeState func(notifier Notifier) QueueState
+		queue     *Queue
 	}{
 		{
 			"UninitializedState with active queue",
-			&UninitializedState{},
+			func(n Notifier) QueueState {
+				return &UninitializedState{notifier: n, channelName: testChannelName}
+			},
 			&Queue{Active: true, Enabled: true},
 		},
 		{
 			"InactiveState transitioning to active",
-			&InactiveState{},
+			func(n Notifier) QueueState {
+				return &InactiveState{notifier: n, channelName: testChannelName}
+			},
 			&Queue{Active: true, Enabled: true},
 		},
 		{
 			"ActiveDisabledState transitioning to enabled",
-			&ActiveDisabledState{},
+			func(n Notifier) QueueState {
+				return &ActiveDisabledState{notifier: n, channelName: testChannelName}
+			},
 			&Queue{Active: true, Enabled: true},
 		},
 		{
 			"ActiveEnabledState transitioning to disabled",
-			&ActiveEnabledState{ticketsLeft: 10},
+			func(n Notifier) QueueState {
+				return &ActiveEnabledState{notifier: n, channelName: testChannelName, ticketsLeft: 10}
+			},
 			&Queue{Active: true, Enabled: false},
 		},
 		{
 			"ActiveEnabledState with ticket change",
-			&ActiveEnabledState{ticketsLeft: 10},
+			func(n Notifier) QueueState {
+				return &ActiveEnabledState{notifier: n, channelName: testChannelName, ticketsLeft: 10}
+			},
 			&Queue{Active: true, Enabled: true, TicketsLeft: 5},
 		},
 	}
@@ -576,18 +558,18 @@ func TestState_Handle_WhenNotificationFails_ReturnsErrorAndKeepsState(t *testing
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			notifier := &testNotifier{shouldFail: true}
-			monitor := createTestMonitor(notifier)
+			notifier := &mockNotifier{shouldFail: true}
+			state := tc.makeState(notifier)
 
 			// Act
-			newState, err := tc.state.Handle(context.Background(), monitor, tc.queue)
+			newState, err := state.Handle(context.Background(), tc.queue)
 
 			// Assert
 			if err == nil {
 				t.Error("expected error when notification fails")
 			}
-			if newState.Name() != tc.state.Name() {
-				t.Errorf("expected state to remain %s, got %s", tc.state.Name(), newState.Name())
+			if newState.Name() != state.Name() {
+				t.Errorf("expected state to remain %s, got %s", state.Name(), newState.Name())
 			}
 		})
 	}
