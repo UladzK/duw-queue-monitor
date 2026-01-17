@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -87,14 +86,9 @@ func (s *StatusCollector) getStatusWithRetries(req *http.Request) (*Response, er
 				return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 			}
 
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read response body: \"%w\"", err)
-			}
-
 			var response Response
-			if err := json.Unmarshal(body, &response); err != nil {
-				return nil, fmt.Errorf("failed to parse response body: \"%w\". body text: %v", err, string(body))
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				return nil, fmt.Errorf("failed to parse response body: %w", err)
 			}
 
 			return &response, nil
