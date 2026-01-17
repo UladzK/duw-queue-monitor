@@ -16,6 +16,7 @@ type QueueMonitorConfig struct {
 	StatusCheckTimeoutMs      uint   `env:"STATUS_CHECK_TIMEOUT_MS" envDefault:"4000"`
 	StatusCheckMaxAttempts    uint   `env:"STATUS_CHECK_MAX_ATTEMPTS" envDefault:"3"`
 	StatusCheckAttemptDelayMs uint   `env:"STATUS_CHECK_ATTEMPT_DELAY_MS" envDefault:"500"`
+	HttpClientTimeoutSeconds  int    `env:"MONITOR_HTTP_CLIENT_TIMEOUT_SECONDS" envDefault:"5"`
 	RedisConString            string `env:"STATE_REDIS_CONNECTION_STRING,required"`
 	StateTtlSeconds           int    `env:"STATE_TTL_SECONDS" envDefault:"60"`
 }

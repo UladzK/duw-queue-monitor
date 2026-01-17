@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"uladzk/duw_kolejka_checker/internal/logger"
 	"uladzk/duw_kolejka_checker/internal/notifications"
 	"uladzk/duw_kolejka_checker/internal/queuemonitor"
@@ -67,7 +68,9 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 		return nil, err
 	}
 
-	httpClient := &http.Client{}
+	httpClient := &http.Client{
+		Timeout: time.Duration(cfg.QueueMonitor.HttpClientTimeoutSeconds) * time.Second,
+	}
 
 	opt, err := redis.ParseURL(cfg.QueueMonitor.RedisConString)
 	if err != nil {
