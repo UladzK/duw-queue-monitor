@@ -13,7 +13,7 @@ func (s *InactiveState) TicketsLeft() int { return 0 }
 
 func (s *InactiveState) Handle(ctx context.Context, queue *Queue) (QueueState, error) {
 	if !queue.Active {
-		return s, nil // Stay inactive with notification
+		return s, nil // Stay inactive without notification
 	}
 
 	// Queue has become active

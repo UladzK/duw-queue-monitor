@@ -7,7 +7,7 @@ import (
 )
 
 // DefaultQueueMonitor is responsible for collecting queue status and sending notifications about changes in queue availability.
-// Essentialy, it's a state machine which tracks the current state of the DUW queue.
+// Essentially, it's a state machine which tracks the current state of the DUW queue.
 type DefaultQueueMonitor struct {
 	cfg       *Config
 	log       *logger.Logger
