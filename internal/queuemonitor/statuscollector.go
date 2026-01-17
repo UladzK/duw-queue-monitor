@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -44,15 +43,15 @@ func NewStatusCollector(cfg *QueueMonitorConfig, httpClient *http.Client, log *l
 	}
 }
 
-func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
-	req, err := http.NewRequest("GET", s.cfg.StatusApiUrl, nil)
+func (s *StatusCollector) GetQueueStatus(ctx context.Context) (queueStatus *Queue, err error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", s.cfg.StatusApiUrl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
 	req.Header.Set("User-Agent", "") // needed because otherwise DUW's API does not return data
 
-	response, err := s.getStatusWithRetries(req)
+	response, err := s.getStatusWithRetries(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get queue status after retries: %w", err)
 	}
@@ -71,8 +70,8 @@ func (s *StatusCollector) GetQueueStatus() (queueStatus *Queue, err error) {
 	return nil, fmt.Errorf("failed to find the queue status for the queue with id: %v", s.cfg.StatusMonitoredQueueId)
 }
 
-func (s *StatusCollector) getStatusWithRetries(req *http.Request) (*Response, error) {
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Duration(s.cfg.StatusCheckTimeoutMs)*time.Millisecond)
+func (s *StatusCollector) getStatusWithRetries(ctx context.Context, req *http.Request) (*Response, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.cfg.StatusCheckTimeoutMs)*time.Millisecond)
 	defer cancel()
 
 	return retry.DoWithData(
@@ -87,14 +86,9 @@ func (s *StatusCollector) getStatusWithRetries(req *http.Request) (*Response, er
 				return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 			}
 
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read response body: \"%w\"", err)
-			}
-
 			var response Response
-			if err := json.Unmarshal(body, &response); err != nil {
-				return nil, fmt.Errorf("failed to parse response body: \"%w\". body text: %v", err, string(body))
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				return nil, fmt.Errorf("failed to parse response body: %w", err)
 			}
 
 			return &response, nil

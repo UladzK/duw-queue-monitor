@@ -1,6 +1,7 @@
 package queuemonitor
 
 import (
+	"context"
 	"testing"
 	"time"
 	"uladzk/duw_kolejka_checker/internal/logger"
@@ -25,7 +26,7 @@ func (m *MockedQueueMonitor) GetState() *MonitorState {
 	return &MonitorState{QueueActive: true} // Return a dummy state for testing
 }
 
-func (m *MockedQueueMonitor) CheckAndProcessStatus() error {
+func (m *MockedQueueMonitor) CheckAndProcessStatus(ctx context.Context) error {
 	m.statusCheckCalled = true
 	return nil
 }
@@ -87,7 +88,7 @@ func TestCheckAndProcessStatus_Always_RunsCheckDependingOnCurrentDateTime(t *tes
 			wm := NewWeekdayQueueMonitor(mm, tt.time, logger)
 
 			// Act
-			_ = wm.CheckAndProcessStatus()
+			_ = wm.CheckAndProcessStatus(context.Background())
 
 			// Assert
 			if mm.statusCheckCalled != tt.expected {

@@ -1,6 +1,7 @@
 package queuemonitor
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -37,7 +38,7 @@ func (f *mockNotifier) SendGeneralQueueStatusUpdateNotification(broadcastChannel
 	return nil
 }
 
-func (f *mockNotifier) SendMessage(chatID, text string) error {
+func (f *mockNotifier) SendMessage(ctx context.Context, chatID, text string) error {
 	f.sendMessageCalled = true
 	f.lastSentChatID = chatID
 	f.lastSentMessage = text
@@ -121,7 +122,7 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 			}
 
 			// Act
-			err := sut.CheckAndProcessStatus()
+			err := sut.CheckAndProcessStatus(context.Background())
 
 			// Assert
 			if err != nil {
@@ -252,7 +253,7 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			}
 
 			// Act
-			err := sut.CheckAndProcessStatus()
+			err := sut.CheckAndProcessStatus(context.Background())
 
 			// Assert
 			if err != nil {
@@ -307,7 +308,7 @@ func TestCheckAndProcessStatus_WhenCollectingQueueStatusFailed_DoesNotPushNotifi
 	})
 
 	// Act
-	err := sut.CheckAndProcessStatus()
+	err := sut.CheckAndProcessStatus(context.Background())
 
 	// Assert
 	if err == nil {
@@ -361,7 +362,7 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 	sut.state.TicketsLeft = 10
 
 	// Act
-	err := sut.CheckAndProcessStatus()
+	err := sut.CheckAndProcessStatus(context.Background())
 
 	// Assert
 	if err == nil {
@@ -453,7 +454,7 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
 
 			// Act
-			err := sut.CheckAndProcessStatus()
+			err := sut.CheckAndProcessStatus(context.Background())
 
 			// Assert
 			if err != nil {

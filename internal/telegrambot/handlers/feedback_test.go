@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -78,7 +79,7 @@ func TestFeedbackHandler_HandleReply_WhenCalled_ProcessesUserFeedbackCorrectly(t
 
 	// Act
 	adminMessage := fmt.Sprintf(feedbackAdminTemplate, feedbackText)
-	err := mockNotifier.SendMessage(adminChatID, adminMessage)
+	err := mockNotifier.SendMessage(context.Background(), adminChatID, adminMessage)
 
 	// Assert
 	if err != nil {
@@ -114,7 +115,7 @@ func TestFeedbackHandler_HandleReply_WhenAdminNotificationFails_HandlesError(t *
 	adminMessage := fmt.Sprintf(feedbackAdminTemplate, feedbackText)
 
 	// Act
-	err := mockNotifier.SendMessage(adminChatID, adminMessage)
+	err := mockNotifier.SendMessage(context.Background(), adminChatID, adminMessage)
 
 	// Assert
 	if err == nil {

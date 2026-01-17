@@ -18,7 +18,7 @@ type Runner struct {
 type QueueMonitor interface {
 	Init(initState *MonitorState)
 	GetState() *MonitorState
-	CheckAndProcessStatus() error
+	CheckAndProcessStatus(ctx context.Context) error
 }
 
 func NewRunner(cfg *Config, log *logger.Logger, monitor QueueMonitor, stateRepo *MonitorStateRepository) *Runner {
@@ -38,14 +38,14 @@ func (h *Runner) Run(ctx context.Context, done chan<- bool) {
 	ticker := time.NewTicker(time.Duration(h.cfg.StatusCheckInternalSeconds) * time.Second)
 	defer ticker.Stop()
 
-	doCheck(h) // to avoid waiting for the first tick
+	doCheck(ctx, h) // to avoid waiting for the first tick
 	for {
 		select {
 		case <-ctx.Done():
 			doShutdown(ctx, h, done)
 			return
 		case <-ticker.C:
-			doCheck(h)
+			doCheck(ctx, h)
 		}
 	}
 }
@@ -58,8 +58,8 @@ func doShutdown(ctx context.Context, h *Runner, done chan<- bool) {
 	done <- true
 }
 
-func doCheck(h *Runner) {
-	if err := h.monitor.CheckAndProcessStatus(); err != nil {
+func doCheck(ctx context.Context, h *Runner) {
+	if err := h.monitor.CheckAndProcessStatus(ctx); err != nil {
 		h.log.Error("Error during collecting status and pushing notifications", err)
 	}
 

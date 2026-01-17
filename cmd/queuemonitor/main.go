@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"uladzk/duw_kolejka_checker/internal/logger"
 	"uladzk/duw_kolejka_checker/internal/notifications"
 	"uladzk/duw_kolejka_checker/internal/queuemonitor"
@@ -15,17 +17,24 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	log, err := buildLogger()
 	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
+		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
 	runner, err := buildRunner(log)
 	if err != nil {
-		panic("failed to initialize runner: " + err.Error())
+		return fmt.Errorf("failed to initialize runner: %w", err)
 	}
 
 	log.Info("Starting queue monitor...")
@@ -40,6 +49,8 @@ func main() {
 	<-done
 
 	log.Info("Queue monitor stopped")
+
+	return nil
 }
 
 func buildLogger() (*logger.Logger, error) {
@@ -57,7 +68,9 @@ func buildRunner(log *logger.Logger) (*queuemonitor.Runner, error) {
 		return nil, err
 	}
 
-	httpClient := &http.Client{}
+	httpClient := &http.Client{
+		Timeout: time.Duration(cfg.QueueMonitor.HttpClientTimeoutSeconds) * time.Second,
+	}
 
 	opt, err := redis.ParseURL(cfg.QueueMonitor.RedisConString)
 	if err != nil {
