@@ -50,6 +50,16 @@ func (f *mockNotifier) SendMessage(ctx context.Context, chatID, text string) err
 	return nil
 }
 
+func deriveStateName(active, enabled bool) string {
+	if !active {
+		return "Inactive"
+	}
+	if enabled {
+		return "ActiveEnabled"
+	}
+	return "ActiveDisabled"
+}
+
 func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTransition(t *testing.T) {
 	// Arrange
 	const queueName = "Odbior karty"
@@ -115,6 +125,7 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
 			expectedFinalState := &MonitorState{
+				StateName:           deriveStateName(tc.newState.Active, tc.newState.Enabled),
 				QueueActive:         tc.newState.Active,
 				QueueEnabled:        tc.newState.Enabled,
 				LastTicketProcessed: tc.newState.TicketValue,
@@ -246,6 +257,7 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
 			sut.Init(&tc.initialState)
 			expectedFinalState := &MonitorState{
+				StateName:           deriveStateName(tc.newState.Active, tc.newState.Enabled),
 				QueueActive:         tc.newState.Active,
 				QueueEnabled:        tc.newState.Enabled,
 				TicketsLeft:         tc.newState.TicketsLeft,
@@ -356,10 +368,11 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 	notifier := &mockNotifier{shouldFail: true}
 
 	sut := NewQueueMonitor(cfg, logger, collector, notifier)
-	sut.isStateInitialized = true
-	sut.state.QueueActive = true
-	sut.state.QueueEnabled = true
-	sut.state.TicketsLeft = 10
+	sut.Init(&MonitorState{
+		QueueActive:  true,
+		QueueEnabled: true,
+		TicketsLeft:  10,
+	})
 
 	// Act
 	err := sut.CheckAndProcessStatus(context.Background())
