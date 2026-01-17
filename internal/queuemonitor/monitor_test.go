@@ -12,10 +12,9 @@ import (
 )
 
 type mockNotifier struct {
-	shouldFail     bool // used to simulate failure in sending notification
-	called         bool
-	lastSentStatus *Queue
-	// New fields for tracking SendMessage calls
+	shouldFail        bool
+	called            bool
+	lastSentStatus    *Queue
 	sendMessageCalled bool
 	lastSentChatID    string
 	lastSentMessage   string
@@ -143,9 +142,6 @@ func TestCheckAndProcessStatus_WhenStateIsNotInitialized_CorrectlyHandlesStateTr
 			if notifier.sendMessageCalled != tc.notificationShouldBeSent {
 				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.sendMessageCalled)
 			}
-
-			// Note: lastSentStatus is no longer used since we switched to SendMessage method
-			// Message format is verified by TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages
 
 			if stateDiff := cmp.Diff(sut.GetState(), expectedFinalState); stateDiff != "" {
 				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", stateDiff)
@@ -275,9 +271,6 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			if notifier.sendMessageCalled != tc.notificationShouldBeSent {
 				t.Errorf("Expected notification sending: %v, but it was: %v", tc.notificationShouldBeSent, notifier.sendMessageCalled)
 			}
-
-			// Note: lastSentStatus is no longer used since we switched to SendMessage method
-			// Message format is verified by TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages
 
 			if diffState := cmp.Diff(sut.GetState(), expectedFinalState); diffState != "" {
 				t.Errorf("State mismatch between currently set state of monitor and latest state (-want +got):\n%s", diffState)
@@ -429,7 +422,6 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 
 	for _, tc := range testConditions {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock API server
 			mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, `{
 					"result": {

@@ -146,7 +146,6 @@ func TestGet_WithLegacyFormat_CanBeReadAndConvertedToState(t *testing.T) {
 			}
 			redisClient := redis.NewClient(&redis.Options{Addr: endpoint})
 
-			// Manually save legacy format without StateName
 			if err := redisClient.Set(ctx, "monitor:state", tc.legacyData, 0).Err(); err != nil {
 				t.Fatalf("Failed to set legacy data: %v", err)
 			}

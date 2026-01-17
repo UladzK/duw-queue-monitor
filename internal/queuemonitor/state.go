@@ -6,11 +6,9 @@ import (
 )
 
 // QueueState represents a state in the queue monitor state machine.
-// Each state is responsible for handling incoming queue status and
-// determining if a transition to a new state should occur.
+// Each state is responsible for handling incoming queue status and determining if a transition to a new state should occur.
 type QueueState interface {
-	// Handle processes the new queue status and returns the next state.
-	// It may trigger notifications via the state's notifier.
+	// Handle processes the new queue status and handles state transitions.
 	Handle(ctx context.Context, queue *Queue) (QueueState, error)
 
 	// Name returns the state name for logging and persistence.
@@ -20,8 +18,7 @@ type QueueState interface {
 	TicketsLeft() int
 }
 
-// sendNotification sends a notification about the queue status.
-// This is used by state implementations when they need to notify.
+// sendNotification sends a notification about the queue status during state transitions.
 func sendNotification(ctx context.Context, notifier Notifier, channelName string, queue *Queue) error {
 	chatID := fmt.Sprintf("@%s", channelName)
 	message := buildQueueAvailableMsg(queue.Name, queue.Enabled, queue.TicketValue, queue.TicketsLeft)
@@ -37,7 +34,6 @@ func StateFromPersistence(ms *MonitorState, notifier Notifier, channelName strin
 		return &UninitializedState{notifier: notifier, channelName: channelName}
 	}
 
-	// New format: use StateName directly
 	if ms.StateName != "" {
 		switch ms.StateName {
 		case "Inactive":
@@ -67,7 +63,7 @@ func StateToPersistence(state QueueState, queue *Queue) *MonitorState {
 		StateName: state.Name(),
 	}
 
-	// Populate legacy fields for backward compatibility
+	// for backward compatibility
 	switch state.Name() {
 	case "Inactive":
 		ms.QueueActive = false
@@ -84,7 +80,6 @@ func StateToPersistence(state QueueState, queue *Queue) *MonitorState {
 		ms.QueueEnabled = false
 	}
 
-	// If queue data is available, use it for ticket info
 	if queue != nil {
 		ms.LastTicketProcessed = queue.TicketValue
 		ms.TicketsLeft = queue.TicketsLeft
