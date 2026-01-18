@@ -422,7 +422,7 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 			"test-queue",
 			"K80",
 			10,
-			"💤 Kolejka <b>test-queue</b> jest obecnie niedostępna.",
+			"⛔ Kolejka <b>test-queue</b> jest obecnie niedostępna.",
 			"@test-channel",
 		},
 		{
