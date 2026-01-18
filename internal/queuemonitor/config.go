@@ -1,6 +1,6 @@
 package queuemonitor
 
-import "uladzk/duw_kolejka_checker/internal/notifications"
+import "github.com/UladzK/duw-queue-monitor/internal/notifications"
 
 type Config struct {
 	StatusCheckInternalSeconds int    `env:"STATUS_CHECK_INTERVAL_SECONDS" envDefault:"10"`

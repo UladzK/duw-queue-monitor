@@ -3,8 +3,8 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"uladzk/duw_kolejka_checker/internal/logger"
-	"uladzk/duw_kolejka_checker/internal/notifications"
+	"github.com/UladzK/duw-queue-monitor/internal/logger"
+	"github.com/UladzK/duw-queue-monitor/internal/notifications"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"

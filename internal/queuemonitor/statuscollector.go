@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"uladzk/duw_kolejka_checker/internal/logger"
+	"github.com/UladzK/duw-queue-monitor/internal/logger"
 
 	"github.com/avast/retry-go/v4"
 )

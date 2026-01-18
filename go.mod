@@ -1,4 +1,4 @@
-module uladzk/duw_kolejka_checker
+module github.com/UladzK/duw-queue-monitor
 
 go 1.25.3
 

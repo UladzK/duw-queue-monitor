@@ -2,9 +2,9 @@ package telegrambot
 
 import (
 	"context"
-	"uladzk/duw_kolejka_checker/internal/logger"
-	"uladzk/duw_kolejka_checker/internal/notifications"
-	"uladzk/duw_kolejka_checker/internal/telegrambot/handlers"
+	"github.com/UladzK/duw-queue-monitor/internal/logger"
+	"github.com/UladzK/duw-queue-monitor/internal/notifications"
+	"github.com/UladzK/duw-queue-monitor/internal/telegrambot/handlers"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"

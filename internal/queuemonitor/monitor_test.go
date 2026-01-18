@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"uladzk/duw_kolejka_checker/internal/logger"
+	"github.com/UladzK/duw-queue-monitor/internal/logger"
 
 	"github.com/google/go-cmp/cmp"
 )
