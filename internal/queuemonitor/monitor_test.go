@@ -441,7 +441,7 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 			"test-queue",
 			"",
 			0,
-			"💤 Kolejka <b>test-queue</b> jest teraz nieaktywna.",
+			"🌙 Kolejka <b>test-queue</b> jest nieaktywna — prawdopodobnie koniec godzin pracy DUW.",
 			"@test-channel",
 			&MonitorState{StateName: "ActiveEnabled", QueueActive: true, QueueEnabled: true, TicketsLeft: 10},
 		},
