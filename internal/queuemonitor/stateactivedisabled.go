@@ -13,12 +13,14 @@ func (s *ActiveDisabledState) TicketsLeft() int { return 0 }
 
 func (s *ActiveDisabledState) Handle(ctx context.Context, queue *Queue) (QueueState, error) {
 	if !queue.Active {
-		// Transition to inactive - no notification
+		if err := sendNotification(ctx, s.notifier, s.channelName, queue, true); err != nil {
+			return s, err
+		}
 		return &InactiveState{notifier: s.notifier, channelName: s.channelName}, nil
 	}
 
 	if queue.Enabled {
-		if err := sendNotification(ctx, s.notifier, s.channelName, queue); err != nil {
+		if err := sendNotification(ctx, s.notifier, s.channelName, queue, false); err != nil {
 			return s, err
 		}
 		return &ActiveEnabledState{notifier: s.notifier, channelName: s.channelName, ticketsLeft: queue.TicketsLeft}, nil

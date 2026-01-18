@@ -170,12 +170,12 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			nil,
 		},
 		{
-			"Condition 2: \"queue was active and disabled, state was initialized, queue becomes not active.\" Expected: \"notification should NOT be sent.\"",
+			"Condition 2: \"queue was active and disabled, state was initialized, queue becomes not active.\" Expected: \"notification should be sent.\"",
 			true,
-			MonitorState{QueueActive: true, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: "K123"},
+			MonitorState{StateName: "ActiveDisabled", QueueActive: true, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: "K123"},
 			Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "K123", TicketsLeft: 0},
-			false,
-			nil,
+			true,
+			&Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "K123", TicketsLeft: 0},
 		},
 		{
 			"Condition 3: \"queue was active, state was initialized, queue remains active, status becomes not enabled.\" Expected: \"notification should be sent.\"",
@@ -208,6 +208,22 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			Queue{Name: queueName, Active: true, Enabled: true, TicketsLeft: 100, TicketValue: ""},
 			false,
 			nil,
+		},
+		{
+			"Condition 7: \"queue was active and disabled, state was initialized, queue becomes inactive.\" Expected: \"notification should be sent.\"",
+			true,
+			MonitorState{StateName: "ActiveDisabled", QueueActive: true, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: "K123"},
+			Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "", TicketsLeft: 0},
+			true,
+			&Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "", TicketsLeft: 0},
+		},
+		{
+			"Condition 8: \"queue was active and enabled, state was initialized, queue becomes inactive.\" Expected: \"notification should be sent.\"",
+			true,
+			MonitorState{StateName: "ActiveEnabled", QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
+			Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "", TicketsLeft: 0},
+			true,
+			&Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "", TicketsLeft: 0},
 		},
 	}
 
@@ -478,5 +494,71 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 				t.Errorf("Expected message to be:\n'%s'\nbut got:\n'%s'", tc.expectedMessage, notifier.lastSentMessage)
 			}
 		})
+	}
+}
+
+func TestCheckAndProcessStatus_MessageFormat_InactiveQueueMessage(t *testing.T) {
+	// Arrange
+	const queueName = "test-queue"
+	mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{
+			"result": {
+				"Wrocław": [{
+					"id": 24,
+					"name": "%v",
+					"ticket_value": "",
+					"tickets_left": 0,
+					"active": false,
+					"enabled": false
+				}]
+			}
+		}`, queueName)
+	}))
+	defer mockDuwApi.Close()
+
+	cfg := &Config{
+		BroadcastChannelName: "test-channel",
+		QueueMonitor: QueueMonitorConfig{
+			StatusApiUrl:              mockDuwApi.URL,
+			StatusCheckTimeoutMs:      4000,
+			StatusCheckMaxAttempts:    3,
+			StatusCheckAttemptDelayMs: 500,
+			StatusMonitoredQueueId:    24,
+			StatusMonitoredQueueCity:  "Wrocław",
+		},
+	}
+
+	loggerInstance := logger.NewLogger(&logger.Config{Level: "error"})
+	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, loggerInstance)
+	notifier := &mockNotifier{}
+	sut := NewQueueMonitor(cfg, loggerInstance, collector, notifier)
+	sut.Init(&MonitorState{
+		StateName:    "ActiveEnabled",
+		QueueActive:  true,
+		QueueEnabled: true,
+		TicketsLeft:  10,
+	})
+
+	expectedMessage := "💤 Kolejka <b>test-queue</b> jest teraz nieaktywna."
+	expectedChatID := "@test-channel"
+
+	// Act
+	err := sut.CheckAndProcessStatus(context.Background())
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Expected successful execution, but execution returned error: %v", err)
+	}
+
+	if !notifier.sendMessageCalled {
+		t.Error("Expected SendMessage to be called, but it wasn't")
+	}
+
+	if notifier.lastSentChatID != expectedChatID {
+		t.Errorf("Expected chat ID to be '%s', but got '%s'", expectedChatID, notifier.lastSentChatID)
+	}
+
+	if notifier.lastSentMessage != expectedMessage {
+		t.Errorf("Expected message to be:\n'%s'\nbut got:\n'%s'", expectedMessage, notifier.lastSentMessage)
 	}
 }

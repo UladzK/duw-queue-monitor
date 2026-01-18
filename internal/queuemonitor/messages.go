@@ -9,6 +9,7 @@ const (
 	msgQueueAvailableGeneral = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>%s</b>\n🧾 Pozostało biletów: <b>%d</b>"
 	msgQueueAvailableShort   = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>%d</b>"
 	msgQueueUnavailable      = "💤 Kolejka <b>%s</b> jest obecnie niedostępna."
+	msgQueueInactive         = "💤 Kolejka <b>%s</b> jest teraz nieaktywna."
 	parseMode                = "HTML"
 )
 
@@ -22,4 +23,8 @@ func buildQueueAvailableMsg(queueName string, queueEnabled bool, actualTicket st
 		return fmt.Sprintf(msgQueueAvailableShort, queueName, numberOfTicketsLeft)
 	}
 	return fmt.Sprintf(msgQueueAvailableGeneral, queueName, actualTicket, numberOfTicketsLeft)
+}
+
+func buildQueueInactiveMsg(queueName string) string {
+	return fmt.Sprintf(msgQueueInactive, queueName)
 }
