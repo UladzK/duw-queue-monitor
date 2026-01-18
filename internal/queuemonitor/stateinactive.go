@@ -17,7 +17,7 @@ func (s *InactiveState) Handle(ctx context.Context, queue *Queue) (QueueState, e
 	}
 
 	// Queue has become active
-	if err := sendNotification(ctx, s.notifier, s.channelName, queue); err != nil {
+	if err := sendNotification(ctx, s.notifier, s.channelName, queue, false); err != nil {
 		return s, err
 	}
 
