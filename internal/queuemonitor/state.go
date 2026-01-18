@@ -1,9 +1,6 @@
 package queuemonitor
 
-import (
-	"context"
-	"fmt"
-)
+import "context"
 
 // QueueState represents a state in the queue monitor state machine.
 // Each state is responsible for handling incoming queue status and determining if a transition to a new state should occur.
@@ -16,21 +13,6 @@ type QueueState interface {
 
 	// TicketsLeft returns the last known tickets count (only relevant for ActiveEnabledState).
 	TicketsLeft() int
-}
-
-// sendNotification sends a notification about the queue status during state transitions.
-func sendNotification(ctx context.Context, notifier Notifier, channelName string, queue *Queue, isInactive bool) error {
-	chatID := fmt.Sprintf("@%s", channelName)
-	var message string
-	if isInactive {
-		message = buildQueueInactiveMsg(queue.Name)
-	} else {
-		message = buildQueueAvailableMsg(queue.Name, queue.Enabled, queue.TicketValue, queue.TicketsLeft)
-	}
-	if err := notifier.SendMessage(ctx, chatID, message); err != nil {
-		return fmt.Errorf("error sending queue notification: %w", err)
-	}
-	return nil
 }
 
 // StateFromPersistence reconstructs a QueueState from persisted MonitorState.
