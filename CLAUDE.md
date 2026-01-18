@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DUW Kolejka Checker is a notification system that monitors queue status at Dolnośląski Urząd Wojewódzki (DUW) and sends real-time notifications via Telegram when queues become available. The system consists of two main services written in Go:
+DUW Queue Monitor is a notification system that monitors queue status at Dolnośląski Urząd Wojewódzki (DUW) and sends real-time notifications via Telegram when queues become available. The system consists of two main services written in Go:
 
 - **queue-monitor**: Periodically checks queue status from the DUW API and sends notifications when status changes
 - **telegram-bot**: Telegram bot interface for user interactions and feedback
