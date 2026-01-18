@@ -10,7 +10,6 @@ const (
 	msgQueueAvailableShort   = "🔔 Kolejka <b>%s</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>%d</b>"
 	msgQueueUnavailable      = "⛔ Kolejka <b>%s</b> jest obecnie niedostępna."
 	msgQueueInactive         = "💤 Kolejka <b>%s</b> jest teraz nieaktywna."
-	parseMode                = "HTML"
 )
 
 // buildQueueAvailableMsg creates a formatted message based on queue status
