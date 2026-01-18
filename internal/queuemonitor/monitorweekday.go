@@ -3,7 +3,7 @@ package queuemonitor
 import (
 	"context"
 	"time"
-	"uladzk/duw_kolejka_checker/internal/logger"
+	"github.com/UladzK/duw-queue-monitor/internal/logger"
 )
 
 // WeekdayQueueMonitor is a wrapper around the DefaultQueueMonitor that disables queue monitoring on weekends and during off hours (06:00 - 17:00 UTC).

@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"uladzk/duw_kolejka_checker/internal/logger"
-	"uladzk/duw_kolejka_checker/internal/notifications"
-	"uladzk/duw_kolejka_checker/internal/queuemonitor"
+	"github.com/UladzK/duw-queue-monitor/internal/logger"
+	"github.com/UladzK/duw-queue-monitor/internal/notifications"
+	"github.com/UladzK/duw-queue-monitor/internal/queuemonitor"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/redis/go-redis/v9"

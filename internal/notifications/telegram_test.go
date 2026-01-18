@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"uladzk/duw_kolejka_checker/internal/logger"
+	"github.com/UladzK/duw-queue-monitor/internal/logger"
 )
 
 func TestSendMessage_WhenRequestSuccessful_SendsMessageToTelegramApiWithCorrectFormat(t *testing.T) {
