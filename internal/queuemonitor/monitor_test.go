@@ -170,12 +170,12 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			nil,
 		},
 		{
-			"Condition 2: \"queue was active and disabled, state was initialized, queue becomes not active.\" Expected: \"notification should NOT be sent.\"",
+			"Condition 2: \"queue was active and disabled, state was initialized, queue becomes not active.\" Expected: \"notification should be sent.\"",
 			true,
-			MonitorState{QueueActive: true, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: "K123"},
+			MonitorState{StateName: "ActiveDisabled", QueueActive: true, QueueEnabled: false, TicketsLeft: 0, LastTicketProcessed: "K123"},
 			Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "K123", TicketsLeft: 0},
-			false,
-			nil,
+			true,
+			&Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "K123", TicketsLeft: 0},
 		},
 		{
 			"Condition 3: \"queue was active, state was initialized, queue remains active, status becomes not enabled.\" Expected: \"notification should be sent.\"",
@@ -208,6 +208,14 @@ func TestCheckAndProcessStatus_WhenStateIsInitialized_CorrectlyHandlesStrateTran
 			Queue{Name: queueName, Active: true, Enabled: true, TicketsLeft: 100, TicketValue: ""},
 			false,
 			nil,
+		},
+		{
+			"Condition 7: \"queue was active and enabled, state was initialized, queue becomes inactive.\" Expected: \"notification should be sent.\"",
+			true,
+			MonitorState{StateName: "ActiveEnabled", QueueActive: true, QueueEnabled: true, TicketsLeft: 10, LastTicketProcessed: "K123"},
+			Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "", TicketsLeft: 0},
+			true,
+			&Queue{Name: queueName, Active: false, Enabled: false, TicketValue: "", TicketsLeft: 0},
 		},
 	}
 
@@ -384,39 +392,58 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 	// Arrange
 	testConditions := []struct {
 		name                string
+		queueActive         bool
 		queueEnabled        bool
 		queueName           string
 		actualTicket        string
 		numberOfTicketsLeft int
 		expectedMessage     string
 		expectedChatID      string
+		initialState        *MonitorState
 	}{
 		{
 			"Available queue with ticket",
+			true,
 			true,
 			"test-queue",
 			"K80",
 			10,
 			"🔔 Kolejka <b>test-queue</b> jest teraz dostępna!\n🎟️ Ostatni przywołany bilet: <b>K80</b>\n🧾 Pozostało biletów: <b>10</b>",
 			"@test-channel",
+			nil,
 		},
 		{
 			"Unavailable queue",
+			true,
 			false,
 			"test-queue",
 			"K80",
 			10,
 			"💤 Kolejka <b>test-queue</b> jest obecnie niedostępna.",
 			"@test-channel",
+			nil,
 		},
 		{
 			"Available queue without ticket",
+			true,
 			true,
 			"Odbiór karty",
 			"",
 			5,
 			"🔔 Kolejka <b>Odbiór karty</b> jest teraz dostępna!\n🧾 Pozostało biletów: <b>5</b>",
 			"@test-channel",
+			nil,
+		},
+		{
+			"Inactive queue",
+			false,
+			false,
+			"test-queue",
+			"",
+			0,
+			"🌙 Kolejka <b>test-queue</b> jest nieaktywna — prawdopodobnie koniec godzin pracy DUW.",
+			"@test-channel",
+			&MonitorState{StateName: "ActiveEnabled", QueueActive: true, QueueEnabled: true, TicketsLeft: 10},
 		},
 	}
 
@@ -430,13 +457,14 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 							"name": "%v",
 							"ticket_value": "%v",
 							"tickets_left": %v,
-							"active": true,
+							"active": %v,
 							"enabled": %v
 						}]
 					}
 				}`, tc.queueName,
 					tc.actualTicket,
 					tc.numberOfTicketsLeft,
+					tc.queueActive,
 					tc.queueEnabled)
 			}))
 			defer mockDuwApi.Close()
@@ -457,6 +485,9 @@ func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing
 			collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, logger)
 			notifier := &mockNotifier{}
 			sut := NewQueueMonitor(cfg, logger, collector, notifier)
+			if tc.initialState != nil {
+				sut.Init(tc.initialState)
+			}
 
 			// Act
 			err := sut.CheckAndProcessStatus(context.Background())

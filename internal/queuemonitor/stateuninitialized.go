@@ -17,7 +17,7 @@ func (s *UninitializedState) Handle(ctx context.Context, queue *Queue) (QueueSta
 	}
 
 	// Queue has become active - always notify
-	if err := sendNotification(ctx, s.notifier, s.channelName, queue); err != nil {
+	if err := sendNotification(ctx, s.notifier, s.channelName, queue, false); err != nil {
 		return s, err
 	}
 
