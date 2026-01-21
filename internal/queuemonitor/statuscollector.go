@@ -58,6 +58,14 @@ func (s *StatusCollector) GetQueueStatus(ctx context.Context) (queueStatus *Queu
 
 	for _, queue := range response.Result[s.cfg.StatusMonitoredQueueCity] {
 		if queue.ID == s.cfg.StatusMonitoredQueueId {
+			if queue.TicketsLeft < 0 {
+				err := fmt.Errorf("invalid queue data: TicketsLeft is negative (%d)", queue.TicketsLeft)
+				s.log.Error("DUW API returned negative TicketsLeft", err,
+					"queueId", queue.ID,
+					"ticketsLeft", queue.TicketsLeft,
+					"ticketValue", queue.TicketValue)
+				return nil, err
+			}
 			return &queue, nil
 		}
 	}
