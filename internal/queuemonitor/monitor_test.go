@@ -388,6 +388,54 @@ func TestCheckAndProcessStatus_WhenPushNotificationFailed_ReturnsError(t *testin
 	}
 }
 
+func TestCheckAndProcessStatus_WhenApiReturnsNegativeTicketsLeft_ReturnsErrorAndDoesNotNotify(t *testing.T) {
+	// Arrange
+	mockDuwApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{
+			"result": {
+				"Wrocław": [{
+					"id": 24,
+					"name": "Odbior karty",
+					"ticket_value": "K123",
+					"tickets_left": -5,
+					"active": true,
+					"enabled": true
+				}]
+			}
+		}`)
+	}))
+	defer mockDuwApi.Close()
+
+	cfg := &Config{
+		QueueMonitor: QueueMonitorConfig{
+			StatusApiUrl:              mockDuwApi.URL,
+			StatusCheckTimeoutMs:      4000,
+			StatusCheckMaxAttempts:    1,
+			StatusCheckAttemptDelayMs: 100,
+			StatusMonitoredQueueId:    24,
+			StatusMonitoredQueueCity:  "Wrocław",
+		},
+	}
+
+	logger := logger.NewLogger(&logger.Config{Level: "error"})
+	collector := NewStatusCollector(&cfg.QueueMonitor, &http.Client{}, logger)
+	notifier := &mockNotifier{}
+
+	sut := NewQueueMonitor(cfg, logger, collector, notifier)
+
+	// Act
+	err := sut.CheckAndProcessStatus(context.Background())
+
+	// Assert
+	if err == nil {
+		t.Fatal("Expected error for negative TicketsLeft, but got nil")
+	}
+
+	if notifier.sendMessageCalled {
+		t.Error("Expected no notification to be sent for invalid data, but notification was sent")
+	}
+}
+
 func TestCheckAndProcessStatus_MessageFormat_CorrectlyFormatsMessages(t *testing.T) {
 	// Arrange
 	testConditions := []struct {
