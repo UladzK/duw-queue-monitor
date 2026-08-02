@@ -34,5 +34,5 @@ variable "alert_email" {
 variable "monthly_threshold_eur" {
   type        = number
   description = "Monthly spend threshold (EUR) above which OVH sends a cost alert"
-  default     = 15
+  default     = 20
 }
