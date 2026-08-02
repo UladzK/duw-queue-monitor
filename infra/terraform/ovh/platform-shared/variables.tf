@@ -26,9 +26,10 @@ variable "ovh_consumer_key" {
   sensitive   = true
 }
 
-variable "alert_email" {
+variable "ovh_billing_alert_email" {
   type        = string
   description = "Email address that receives OVH Public Cloud project cost alerts"
+  sensitive   = true
 }
 
 variable "monthly_threshold_eur" {
